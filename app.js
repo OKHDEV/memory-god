@@ -3277,7 +3277,7 @@ const App = {
       (transcript) => {
         liveText.textContent = `"${transcript}"`;
 
-        // 1. 실시간 단어 오답 감지 ("안녕하세요 저는 바나나" -> 바나나가 아닌 사과입니다! 즉시 피드백)
+        // 1. 실시간 단어 오답 감지 ("안녕하세요 저는 바나나" -> "바나나가 아닌 사과라고 말해야 해요!" 즉시 피드백)
         const mismatch = this.findVoiceMismatch(transcript, sentence);
         if (mismatch) {
           SpeechEngine.stopListen();
@@ -3296,12 +3296,12 @@ const App = {
           const p = getParticle(mismatch.wrongWord);
 
           const promptText = lang.startsWith('en')
-            ? `Not "${mismatch.wrongWord}", but "${mismatch.expectedWord}"! Let's try again!`
-            : `"${mismatch.wrongWord}"${p} 아닌 "${mismatch.expectedWord}"입니다! 다시 해볼까요?`;
+            ? `Not "${mismatch.wrongWord}", you should say "${mismatch.expectedWord}"!`
+            : `"${mismatch.wrongWord}"${p} 아닌 "${mismatch.expectedWord}"라고 말해야 해요!`;
 
           const voicePrompt = lang.startsWith('en')
-            ? `Not ${mismatch.wrongWord}, but ${mismatch.expectedWord}! Let's try again!`
-            : `${mismatch.wrongWord}${p} 아닌 ${mismatch.expectedWord}입니다! 다시 해볼까요?`;
+            ? `Not ${mismatch.wrongWord}, you should say ${mismatch.expectedWord}!`
+            : `${mismatch.wrongWord}${p} 아닌 ${mismatch.expectedWord}라고 말해야 해요!`;
 
           feedbackBox.classList.remove('hidden');
           document.getElementById('voiceCoachFeedbackText').textContent = `🗣️ ${promptText}`;
@@ -3341,13 +3341,43 @@ const App = {
             SoundFX.playErrorThud();
             VisualFX.shake('error');
             feedbackBox.classList.remove('hidden');
-            document.getElementById('voiceCoachFeedbackText').textContent = '🗣️ "어떤 부분이 틀렸어요. 다시 해볼까요?"';
 
-            const promptVoice = lang.startsWith('en')
-              ? "That wasn't quite right. Let's try again!"
-              : "어떤 부분이 틀렸어요. 다시 해볼까요?";
+            const getParticle = (w) => {
+              if (!w) return '이';
+              const c = w.charCodeAt(w.length - 1);
+              if (c < 0xAC00 || c > 0xD7A3) return '이';
+              return (c - 0xAC00) % 28 > 0 ? '이' : '가';
+            };
 
-            SpeechEngine.speak(promptVoice, lang, 1.0, () => {
+            const mismatch = this.findVoiceMismatch(lastSpoken, sentence);
+            let promptText = '';
+            let voicePrompt = '';
+
+            if (mismatch) {
+              const p = getParticle(mismatch.wrongWord);
+              promptText = lang.startsWith('en')
+                ? `Not "${mismatch.wrongWord}", you should say "${mismatch.expectedWord}"!`
+                : `"${mismatch.wrongWord}"${p} 아닌 "${mismatch.expectedWord}"라고 말해야 해요!`;
+              voicePrompt = lang.startsWith('en')
+                ? `Not ${mismatch.wrongWord}, you should say ${mismatch.expectedWord}!`
+                : `${mismatch.wrongWord}${p} 아닌 ${mismatch.expectedWord}라고 말해야 해요!`;
+            } else {
+              const cleanPunct = (str) => str.replace(/['"`.,~!?]/g, '').trim();
+              const tWords = cleanPunct(sentence).split(/\s+/).filter(Boolean);
+              const sWords = cleanPunct(lastSpoken).split(/\s+/).filter(Boolean);
+              const nextExpected = tWords[sWords.length] || tWords[0] || '다음 단어';
+
+              promptText = lang.startsWith('en')
+                ? `You should say "${nextExpected}"!`
+                : `"${nextExpected}"라고 이어서 말해야 해요!`;
+              voicePrompt = lang.startsWith('en')
+                ? `You should say ${nextExpected}!`
+                : `${nextExpected}라고 이어서 말해야 해요!`;
+            }
+
+            document.getElementById('voiceCoachFeedbackText').textContent = `🗣️ ${promptText}`;
+
+            SpeechEngine.speak(voicePrompt, lang, 1.0, () => {
               setTimeout(() => {
                 feedbackBox.classList.add('hidden');
                 simRate.textContent = '0%';
