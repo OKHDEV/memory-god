@@ -314,8 +314,10 @@ const VisualFX = {
     this.spawnHit(x, y, count, goldColors);
   },
 
-  // 화면 흔들림(Screen Shake) 효과
+  // 화면 흔들림(Screen Shake) 효과 - 사용자의 요청에 따라 기본적으로 완전 차단
   shake(type = 'hit') {
+    if (!Store.settings.screenShake) return; // 화면 흔들림 완전 끔!
+
     const app = document.getElementById('app');
     if (!app) return;
     const className = type === 'error' ? 'shake-error' : 'shake-hit';
@@ -324,7 +326,7 @@ const VisualFX = {
     app.classList.add(className);
     setTimeout(() => {
       app.classList.remove(className);
-    }, type === 'error' ? 250 : 150);
+    }, 80);
   },
 
   loop() {
@@ -479,6 +481,7 @@ const Store = {
 
   settings: {
     sound: true,
+    screenShake: false, // 기본값: 완전 꺼짐 (눈 편안함)
     punctFlexible: true,
     fontScale: 1,
     theme: 'dark',
@@ -494,6 +497,11 @@ const Store = {
       } catch (e) {
         console.error(e);
       }
+    }
+    // 사용자가 너무 어지럽지 않도록 화면 흔들림 기본값은 완전 OFF로 초기화
+    if (this.settings.screenShake === undefined || this.settings.screenShake === true) {
+      this.settings.screenShake = false;
+      this.saveSettings();
     }
 
     const savedData = localStorage.getItem(this.STORAGE_KEY);
@@ -679,6 +687,13 @@ const App = {
     btnSound.classList.toggle('active', Store.settings.sound);
     document.getElementById('soundIcon').textContent = Store.settings.sound ? '🔊' : '🔇';
 
+    const btnShake = document.getElementById('btnShakeToggle');
+    if (btnShake) {
+      btnShake.classList.toggle('active', !!Store.settings.screenShake);
+      document.getElementById('shakeIcon').textContent = Store.settings.screenShake ? '📳' : '📴';
+      btnShake.title = Store.settings.screenShake ? '화면 흔들림 켜짐 (클릭시 끔)' : '화면 흔들림 꺼짐 (클릭시 켬)';
+    }
+
     const btnPunct = document.getElementById('btnPunctuationToggle');
     btnPunct.classList.toggle('active', Store.settings.punctFlexible);
 
@@ -695,6 +710,15 @@ const App = {
     // 1. 헤더 컨트롤
     document.getElementById('textSelect').addEventListener('change', (e) => {
       this.loadText(e.target.value);
+    });
+
+    document.getElementById('btnShakeToggle').addEventListener('click', () => {
+      Store.settings.screenShake = !Store.settings.screenShake;
+      Store.saveSettings();
+      this.applySettingsToUI();
+      if (Store.settings.screenShake) {
+        SoundFX.playHit(0);
+      }
     });
 
     document.getElementById('btnSoundToggle').addEventListener('click', () => {
