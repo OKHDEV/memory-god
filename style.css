@@ -2974,6 +2974,18 @@ label {
   box-shadow: 0 0 14px rgba(251, 191, 36, 0.6);
 }
 
+.acid-word-drop.npc-targeting {
+  border-color: #ef4444 !important;
+  color: #fca5a5 !important;
+  box-shadow: 0 0 16px rgba(239, 68, 68, 0.9) !important;
+  animation: targetBlink 0.3s infinite alternate !important;
+}
+
+@keyframes targetBlink {
+  0% { transform: translateX(-50%) scale(1); }
+  100% { transform: translateX(-50%) scale(1.1); }
+}
+
 .acid-bottom-panel {
   display: flex;
   flex-direction: column;

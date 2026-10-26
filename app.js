@@ -1108,6 +1108,7 @@ const MiniGameEngine = {
     // 산성비 타이머 정리
     clearInterval(this.acid.spawnInterval);
     clearInterval(this.acid.gameTimerInterval);
+    clearTimeout(this.acid.npcInterval);
     clearInterval(this.acid.npcInterval);
     if (this.acid.animationFrameId) cancelAnimationFrame(this.acid.animationFrameId);
     clearTimeout(this.acid.freezeTimeout);
@@ -1386,27 +1387,49 @@ const MiniGameEngine = {
       }
     }, 1000);
 
-    // 단어 생성 주기
-    const spawnRate = this.difficulty === 'hard' ? 1000 : 1600;
+    // 단어 생성 주기 (화면에 5개 미만일 때만 생성)
+    const spawnRate = this.difficulty === 'hard' ? 1300 : 1800;
     this.acid.spawnInterval = setInterval(() => {
       if (!this.acid.active || this.acid.isFrozen) return;
-      this.spawnAcidWord();
+      if (this.acid.words.length < 5) {
+        this.spawnAcidWord();
+      }
     }, spawnRate);
 
-    // NPC 요격 주기
-    const npcRate = this.difficulty === 'hard' ? 1200 : 2300;
-    this.acid.npcInterval = setInterval(() => {
-      if (!this.acid.active || this.acid.isFrozen) return;
-      this.npcInterceptAcidWord();
-    }, npcRate);
+    // 시작 시 초기 단어 순차 스폰
+    setTimeout(() => {
+      if (this.acid.active) {
+        this.spawnAcidWord();
+        setTimeout(() => { if (this.acid.active) this.spawnAcidWord(); }, 800);
+      }
+    }, 300);
+
+    // NPC 요격 루프 (화면 35% 이상 내려온 단어만 1.2초 조준 후 요격)
+    const scheduleNpcShot = () => {
+      if (!this.acid.active) return;
+      const delay = this.difficulty === 'hard' 
+        ? (2500 + Math.random() * 1200) 
+        : (3800 + Math.random() * 1600);
+
+      this.acid.npcInterval = setTimeout(() => {
+        if (!this.acid.active || this.acid.isFrozen) {
+          scheduleNpcShot();
+          return;
+        }
+        this.npcInterceptAcidWord();
+        scheduleNpcShot();
+      }, delay);
+    };
+    scheduleNpcShot();
 
     // 부드러운 낙하 루프
-    const speed = this.difficulty === 'hard' ? 1.4 : 0.9;
+    const speed = this.difficulty === 'hard' ? 0.95 : 0.65;
     const animateFall = () => {
       if (!this.acid.active) return;
 
       if (!this.acid.isFrozen) {
-        const skyHeight = sky ? sky.offsetHeight : 310;
+        const skyHeight = sky && sky.clientHeight > 100 ? sky.clientHeight : 310;
+
         for (let i = this.acid.words.length - 1; i >= 0; i--) {
           const item = this.acid.words[i];
           item.y += speed;
@@ -1414,8 +1437,8 @@ const MiniGameEngine = {
             item.el.style.top = `${item.y}px`;
           }
 
-          // 바닥 도달 (감점 후 제거, 안 죽음)
-          if (item.y >= skyHeight - 24) {
+          // 바닥 도달 검사 (반드시 60px 이상 떨어졌고, 바닥 쉴드에 도달했을 때만 흡수)
+          if (item.y > 60 && item.y >= skyHeight - 34) {
             if (item.el) item.el.remove();
             this.acid.words.splice(i, 1);
             this.acid.playerScore = Math.max(0, this.acid.playerScore - 15);
@@ -1469,7 +1492,8 @@ const MiniGameEngine = {
       text: wordText,
       powerType,
       el: wordEl,
-      y: 0
+      y: 0,
+      isTargeted: false
     });
   },
 
@@ -1479,9 +1503,13 @@ const MiniGameEngine = {
     const typed = input.value.trim().toLowerCase();
     if (!typed) return;
 
+    const cleanTyped = Store.settings.punctFlexible ? typed.replace(/[^\w가-힣]/g, '') : typed;
+
     const matchIdx = this.acid.words.findIndex(w => {
-      const cleanW = w.text.replace(/['"`.,~!?]/g, '').toLowerCase();
-      return cleanW === typed;
+      const cleanW = Store.settings.punctFlexible 
+        ? w.text.replace(/[^\w가-힣]/g, '').toLowerCase() 
+        : w.text.toLowerCase();
+      return cleanW === cleanTyped || cleanW === typed;
     });
 
     if (matchIdx >= 0) {
@@ -1533,16 +1561,34 @@ const MiniGameEngine = {
 
   npcInterceptAcidWord() {
     if (this.acid.words.length === 0) return;
-    const targetIdx = Math.floor(Math.random() * this.acid.words.length);
-    const target = this.acid.words[targetIdx];
+    const sky = document.getElementById('acidSkyScreen');
+    const skyHeight = sky && sky.clientHeight > 100 ? sky.clientHeight : 310;
 
-    const rect = target.el.getBoundingClientRect();
-    VisualFX.spawnHit(rect.left + rect.width / 2, rect.top + rect.height / 2, 6);
+    // 화면 35% 이상 내려온 단어 중에서만 조준 (새로 생성된 단어는 건드리지 않음)
+    const eligible = this.acid.words.filter(w => w.y > skyHeight * 0.35 && !w.isTargeted);
+    if (eligible.length === 0) return;
 
-    target.el.remove();
-    this.acid.words.splice(targetIdx, 1);
-    this.acid.npcScore += 80;
-    this.updateAcidScoreUI();
+    const target = eligible[Math.floor(Math.random() * eligible.length)];
+    target.isTargeted = true;
+    if (target.el) {
+      target.el.classList.add('npc-targeting');
+      target.el.setAttribute('title', '🤖 NPC가 조준 중! 먼저 입력해 가로채세요!');
+    }
+
+    // 1.2초간 조준 예고 후 요격 (그 사이에 플레이어가 먼저 치면 가로채기 성공!)
+    setTimeout(() => {
+      if (!this.acid.active) return;
+      const curIdx = this.acid.words.indexOf(target);
+      if (curIdx >= 0) {
+        const rect = target.el.getBoundingClientRect();
+        VisualFX.spawnHit(rect.left + rect.width / 2, rect.top + rect.height / 2, 8);
+
+        target.el.remove();
+        this.acid.words.splice(curIdx, 1);
+        this.acid.npcScore += 80;
+        this.updateAcidScoreUI();
+      }
+    }, 1200);
   },
 
   updateAcidScoreUI() {
