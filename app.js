@@ -1946,29 +1946,51 @@ const App = {
       if (item.isHint) {
         return `<span class="snowball-chip-hint">💡 ${this.escapeHtml(item.word)}</span>`;
       }
-      return `<input type="text" class="snowball-slot-input" data-idx="${idx}" data-ans="${encodeURIComponent(item.word)}" placeholder="직접 입력" autocomplete="off" spellcheck="false">`;
+      return `
+        <span class="snowball-slot-unit" id="snowballUnit_${idx}">
+          <input type="text" class="snowball-slot-input" data-idx="${idx}" data-ans="${encodeURIComponent(item.word)}" placeholder="직접 입력" autocomplete="off" spellcheck="false">
+          <span class="snowball-check-icon hidden" id="snowballCheck_${idx}">✅</span>
+        </span>
+      `;
     }).join('');
 
-    // 인풋 포커스 및 엔터 이동
+    // 인풋 실시간 타이핑 검사 및 엔터/포커스 이동
     const inputs = container.querySelectorAll('.snowball-slot-input');
     inputs.forEach((inp, i) => {
+      inp.addEventListener('input', () => {
+        this.checkSingleSnowballInput(inp, true);
+      });
+
       inp.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
           e.preventDefault();
-          this.checkSingleSnowballInput(inp);
-          if (inputs[i + 1]) inputs[i + 1].focus();
-          else document.getElementById('btnCheckSnowball').focus();
+          const isRight = this.checkSingleSnowballInput(inp, false);
+          if (isRight) {
+            const nextEmpty = Array.from(inputs).find((other, idx) => idx > i && !other.classList.contains('correct'));
+            if (nextEmpty) nextEmpty.focus();
+            else document.getElementById('btnCheckSnowball').focus();
+          } else {
+            SoundFX.playErrorThud();
+            VisualFX.shake('error');
+            inp.classList.add('shake-error');
+            setTimeout(() => inp.classList.remove('shake-error'), 400);
+          }
         }
       });
-      inp.addEventListener('blur', () => this.checkSingleSnowballInput(inp));
+
+      inp.addEventListener('blur', () => this.checkSingleSnowballInput(inp, false));
     });
 
     if (inputs[0]) inputs[0].focus();
   },
 
-  checkSingleSnowballInput(inp) {
+  checkSingleSnowballInput(inp, autoAdvance = false) {
     const val = inp.value.trim();
     const ans = decodeURIComponent(inp.dataset.ans);
+    const idx = inp.dataset.idx;
+    const unit = document.getElementById(`snowballUnit_${idx}`);
+    const checkIcon = document.getElementById(`snowballCheck_${idx}`);
+
     const cleanIn = Store.settings.punctFlexible ? val.replace(/[^\w가-힣]/g, '').toLowerCase() : val;
     const cleanAns = Store.settings.punctFlexible ? ans.replace(/[^\w가-힣]/g, '').toLowerCase() : ans;
 
@@ -1976,9 +1998,44 @@ const App = {
       if (!inp.classList.contains('correct')) {
         inp.classList.add('correct');
         inp.value = ans;
+        if (unit) unit.classList.add('correct');
+        if (checkIcon) {
+          checkIcon.classList.remove('hidden');
+          checkIcon.classList.remove('pop-check');
+          void checkIcon.offsetWidth; // trigger reflow
+          checkIcon.classList.add('pop-check');
+        }
         SoundFX.playWordCheck();
-        VisualFX.spawnHit(inp.getBoundingClientRect().left + 40, inp.getBoundingClientRect().top + 10, 6);
+        VisualFX.spawnHit(inp.getBoundingClientRect().left + 40, inp.getBoundingClientRect().top + 10, 8);
+
+        // 다음 빈칸으로 자동 포커스 이동 (실시간 타이핑 완료 시)
+        if (autoAdvance) {
+          const container = document.getElementById('snowballSlotsBox');
+          const allInputs = Array.from(container.querySelectorAll('.snowball-slot-input'));
+          const nextEmpty = allInputs.find(i => !i.classList.contains('correct'));
+          if (nextEmpty) {
+            nextEmpty.focus();
+          }
+        }
+
+        // 모든 슬롯이 맞았는지 확인하여 자동 클리어
+        const container = document.getElementById('snowballSlotsBox');
+        const allInputs = Array.from(container.querySelectorAll('.snowball-slot-input'));
+        const allDone = allInputs.every(i => i.classList.contains('correct'));
+        if (allDone) {
+          setTimeout(() => {
+            this.markCurrentAsMemorized(true);
+          }, 350);
+        }
       }
+      return true;
+    } else {
+      if (inp.classList.contains('correct')) {
+        inp.classList.remove('correct');
+        if (unit) unit.classList.remove('correct');
+        if (checkIcon) checkIcon.classList.add('hidden');
+      }
+      return false;
     }
   },
 
@@ -1988,9 +2045,11 @@ const App = {
     let allCorrect = true;
 
     inputs.forEach(inp => {
-      this.checkSingleSnowballInput(inp);
-      if (!inp.classList.contains('correct')) {
+      const isRight = this.checkSingleSnowballInput(inp, false);
+      if (!isRight) {
         allCorrect = false;
+        inp.classList.add('shake-error');
+        setTimeout(() => inp.classList.remove('shake-error'), 400);
       }
     });
 

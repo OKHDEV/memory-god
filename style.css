@@ -2026,6 +2026,13 @@ label {
   gap: 4px;
 }
 
+.snowball-slot-unit {
+  display: inline-flex;
+  align-items: center;
+  position: relative;
+  gap: 5px;
+}
+
 .snowball-slot-input {
   background: rgba(15, 23, 42, 0.9);
   border: 1px dashed rgba(251, 191, 36, 0.6);
@@ -2036,7 +2043,7 @@ label {
   padding: 4px 10px;
   border-radius: var(--radius-sm);
   outline: none;
-  min-width: 100px;
+  min-width: 90px;
   text-align: center;
   transition: var(--transition);
 }
@@ -2047,11 +2054,29 @@ label {
   box-shadow: 0 0 12px var(--accent-gold-glow);
 }
 
+.snowball-slot-unit.correct .snowball-slot-input,
 .snowball-slot-input.correct {
   background: rgba(16, 185, 129, 0.2);
-  border-color: var(--accent-green);
+  border-color: #34d399;
   border-style: solid;
   color: #34d399;
+  box-shadow: 0 0 12px rgba(52, 211, 153, 0.35);
+}
+
+.snowball-check-icon {
+  font-size: 1.15rem;
+  line-height: 1;
+  display: inline-block;
+}
+
+.snowball-check-icon.pop-check {
+  animation: checkPop 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes checkPop {
+  0% { transform: scale(0.2) rotate(-25deg); opacity: 0; }
+  70% { transform: scale(1.35) rotate(6deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
 }
 
 .snowball-actions {
