@@ -33,8 +33,6 @@ const SoundFX = {
     if (!this.ctx) return;
 
     const t = this.ctx.currentTime;
-    
-    // 찰칵 스냅 노이즈
     const bufferSize = Math.floor(this.ctx.sampleRate * 0.012);
     const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
     const data = buffer.getChannelData(0);
@@ -57,7 +55,6 @@ const SoundFX = {
     noiseGain.connect(this.ctx.destination);
     noise.start(t);
 
-    // 바디 틱
     const osc = this.ctx.createOscillator();
     const oscGain = this.ctx.createGain();
     osc.type = 'triangle';
@@ -73,7 +70,7 @@ const SoundFX = {
     osc.stop(t + 0.025);
   },
 
-  // 팡! 찰진 정답 타격음 (콤보에 따라 피치 상승)
+  // 팡! 정답 타격음
   playHit(combo = 0) {
     if (!this.enabled) return;
     this.init();
@@ -82,7 +79,6 @@ const SoundFX = {
     const t = this.ctx.currentTime;
     const pitchOffset = Math.min(combo * 16, 260);
 
-    // 1. 묵직한 펀치 킥
     const oscKick = this.ctx.createOscillator();
     const gainKick = this.ctx.createGain();
     oscKick.type = 'sine';
@@ -97,7 +93,6 @@ const SoundFX = {
     oscKick.start(t);
     oscKick.stop(t + 0.1);
 
-    // 2. 촥! 하는 크런치 스냅
     const oscSnap = this.ctx.createOscillator();
     const gainSnap = this.ctx.createGain();
     oscSnap.type = 'triangle';
@@ -113,7 +108,29 @@ const SoundFX = {
     oscSnap.stop(t + 0.07);
   },
 
-  // 콤보 팡팡 아케이드 사운드 (3콤보 이상)
+  // 단어 하나 맞췄을 때 딩동 체크 사운드
+  playWordCheck() {
+    if (!this.enabled) return;
+    this.init();
+    if (!this.ctx) return;
+
+    const t = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(659.25, t); // E5
+    osc.frequency.exponentialRampToValueAtTime(1046.5, t + 0.12); // C6
+
+    gain.gain.setValueAtTime(0.28, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.14);
+
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start(t);
+    osc.stop(t + 0.15);
+  },
+
+  // 콤보 팡팡 아케이드 사운드
   playComboSound(combo) {
     if (!this.enabled) return;
     this.init();
@@ -146,7 +163,6 @@ const SoundFX = {
 
     const t = this.ctx.currentTime;
 
-    // 강력한 폭발음
     const oscBoom = this.ctx.createOscillator();
     const gainBoom = this.ctx.createGain();
     oscBoom.type = 'triangle';
@@ -161,7 +177,6 @@ const SoundFX = {
     oscBoom.start(t);
     oscBoom.stop(t + 0.36);
 
-    // 반짝이는 챠임 (C5 - E5 - G5 - C6)
     const notes = [523.25, 659.25, 783.99, 1046.50];
     notes.forEach((freq, idx) => {
       const osc = this.ctx.createOscillator();
@@ -182,7 +197,7 @@ const SoundFX = {
     });
   },
 
-  // 스테이지 클리어 팡파레 (스텝 완료 시)
+  // 스테이지 클리어 팡파레
   playStageClear() {
     if (!this.enabled) return;
     this.init();
@@ -205,7 +220,48 @@ const SoundFX = {
     });
   },
 
-  // 오답 퍽! 둔탁한 타격음
+  // 타임어택 틱 사운드
+  playTimerTick() {
+    if (!this.enabled) return;
+    this.init();
+    if (!this.ctx) return;
+
+    const t = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(900, t);
+    gain.gain.setValueAtTime(0.08, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.04);
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start(t);
+    osc.stop(t + 0.05);
+  },
+
+  // 타임오버 경고 사운드
+  playTimeOver() {
+    if (!this.enabled) return;
+    this.init();
+    if (!this.ctx) return;
+
+    const t = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(260, t);
+    osc.frequency.linearRampToValueAtTime(60, t + 0.3);
+
+    gain.gain.setValueAtTime(0.4, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start(t);
+    osc.stop(t + 0.32);
+  },
+
+  // 오답 퍽!
   playErrorThud() {
     if (!this.enabled) return;
     this.init();
@@ -288,7 +344,6 @@ const VisualFX = {
     this.canvas.height = window.innerHeight;
   },
 
-  // 스파크 파티클 터짐
   spawnHit(x, y, count = 12, colors = ['#fbbf24', '#f59e0b', '#38bdf8', '#818cf8', '#ffffff']) {
     for (let i = 0; i < count; i++) {
       const angle = Math.random() * Math.PI * 2;
@@ -308,15 +363,13 @@ const VisualFX = {
     }
   },
 
-  // 대폭발 파티클
   spawnBurst(x, y, count = 45) {
     const goldColors = ['#fbbf24', '#f59e0b', '#10b981', '#34d399', '#ffffff', '#e11d48'];
     this.spawnHit(x, y, count, goldColors);
   },
 
-  // 화면 흔들림(Screen Shake) 효과 - 사용자의 요청에 따라 기본적으로 완전 차단
   shake(type = 'hit') {
-    if (!Store.settings.screenShake) return; // 화면 흔들림 완전 끔!
+    if (!Store.settings.screenShake) return; // 기본 꺼짐
 
     const app = document.getElementById('app');
     if (!app) return;
@@ -362,10 +415,9 @@ const VisualFX = {
 
 
 // ============================================================================
-// 3. 지능형 핵심 키워드 분석기 & 초성 엔진 (Keyword & Chosung Analyzer)
+// 3. 지능형 핵심 키워드 분석기 & 초성 엔진 (NLPAnalyzer)
 // ============================================================================
 const NLPAnalyzer = {
-  // 한국어 불용어 (조사, 형식 형태소, 접속사 등)
   KO_STOPWORDS: new Set([
     '은', '는', '이', '가', '을', '를', '의', '에', '에서', '로', '으로',
     '과', '와', '하고', '도', '만', '뿐', '부터', '까지', '에게', '한테',
@@ -374,7 +426,6 @@ const NLPAnalyzer = {
     '있다', '없다', '된다', '한다'
   ]),
 
-  // 영어 불용어 (관사, 전치사, be동사, 대명사 등)
   EN_STOPWORDS: new Set([
     'a', 'an', 'the', 'is', 'are', 'was', 'were', 'be', 'been', 'being',
     'have', 'has', 'had', 'do', 'does', 'did', 'to', 'of', 'in', 'for',
@@ -387,7 +438,26 @@ const NLPAnalyzer = {
     'ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ','ㅅ','ㅆ','ㅇ','ㅈ','ㅉ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'
   ],
 
-  // 단어가 핵심 키워드인지 판별하고 중요도 점수 반환
+  // 단일 단어의 초성 추출 (예: "유구한" -> "ㅇㄱㅎ", "Hello" -> "H____")
+  getWordChosung(word, lang = 'ko-KR') {
+    if (lang.startsWith('en')) {
+      const match = word.match(/[a-zA-Z]+/);
+      if (!match) return word;
+      const letters = match[0];
+      const rest = '_'.repeat(Math.max(1, letters.length - 1));
+      return word.replace(letters, letters[0] + rest);
+    }
+
+    return word.split('').map(char => {
+      const code = char.charCodeAt(0);
+      if (code >= 0xAC00 && code <= 0xD7A3) {
+        const chosungIndex = Math.floor((code - 0xAC00) / (21 * 28));
+        return this.CHOSUNG_LIST[chosungIndex];
+      }
+      return char;
+    }).join('');
+  },
+
   getKeywordScore(word, lang = 'ko-KR') {
     const clean = word.replace(/[^a-zA-Z0-9가-힣]/g, '').toLowerCase();
     if (clean.length <= 1) return 0;
@@ -397,10 +467,8 @@ const NLPAnalyzer = {
       return clean.length >= 4 ? 10 : 5;
     }
 
-    // 한국어: 조사 분리 분석
     if (this.KO_STOPWORDS.has(clean)) return 1;
 
-    // 조사가 붙어있는 긴 단어 검사 (예: "헌법을", "민주개혁과")
     const commonPostpositions = ['에서', '으로', '부터', '까지', '에게', '은', '는', '이', '가', '을', '를', '의', '에', '로', '과', '와', '도'];
     let stem = clean;
     for (const post of commonPostpositions) {
@@ -411,15 +479,13 @@ const NLPAnalyzer = {
     }
 
     if (stem.length >= 2 && !this.KO_STOPWORDS.has(stem)) {
-      return 10; // 명사/핵심어
+      return 10;
     }
     return 3;
   },
 
-  // 2단계: 핵심 키워드 우선 가리기 (기본 난이도: 어려움 75%)
   generateKeywordCloze(sentence, level = 75, lang = 'ko-KR') {
     const tokens = sentence.split(/(\s+)/);
-    // 각 단어별 점수 계산
     const wordList = [];
     tokens.forEach((token, idx) => {
       if (!/^\s+$/.test(token) && /[a-zA-Z0-9가-힣]/.test(token)) {
@@ -428,9 +494,7 @@ const NLPAnalyzer = {
       }
     });
 
-    // 점수가 높은 핵심 키워드 순으로 정렬
     const sorted = [...wordList].sort((a, b) => b.score - a.score);
-    // 가릴 단어 개수 산출 (어려움: 75% -> 핵심 키워드 80% 이상 전멸)
     const ratio = level / 100;
     const targetCount = Math.max(1, Math.round(wordList.length * ratio));
     const blankIndices = new Set(sorted.slice(0, targetCount).map(item => item.idx));
@@ -441,28 +505,6 @@ const NLPAnalyzer = {
       }
       return App.escapeHtml(token);
     }).join('');
-  },
-
-  // 3단계: 초성/첫글자 단서 생성
-  generateChosungPrompt(sentence, lang = 'ko-KR') {
-    if (lang.startsWith('en')) {
-      return sentence.replace(/[a-zA-Z]+/g, match => {
-        if (match.length <= 1) return match;
-        const first = match[0];
-        const rest = '_'.repeat(match.length - 1);
-        return `<span class="chosung-char">${first}</span><span class="chosung-mask">${rest}</span>`;
-      });
-    }
-
-    // 한국어 초성 분리
-    return sentence.split('').map(char => {
-      const code = char.charCodeAt(0);
-      if (code >= 0xAC00 && code <= 0xD7A3) {
-        const chosungIndex = Math.floor((code - 0xAC00) / (21 * 28));
-        return `<span class="chosung-char">${this.CHOSUNG_LIST[chosungIndex]}</span>`;
-      }
-      return char;
-    }).join('');
   }
 };
 
@@ -471,8 +513,8 @@ const NLPAnalyzer = {
 // 4. 스토어 및 진행도 관리 (Store)
 // ============================================================================
 const Store = {
-  STORAGE_KEY: 'MEMORY_GOD_PRO_DATA_V3',
-  SETTINGS_KEY: 'MEMORY_GOD_PRO_SETTINGS_V3',
+  STORAGE_KEY: 'MEMORY_GOD_PRO_DATA_V4',
+  SETTINGS_KEY: 'MEMORY_GOD_PRO_SETTINGS_V4',
 
   data: {
     texts: [],
@@ -481,12 +523,12 @@ const Store = {
 
   settings: {
     sound: true,
-    screenShake: false, // 기본값: 완전 꺼짐 (눈 편안함)
+    screenShake: false,
     punctFlexible: true,
     fontScale: 1,
     theme: 'dark',
     ttsRate: 1.0,
-    clozeLevel: 75 // 기본: 어려움 (핵심 75%)
+    clozeLevel: 75
   },
 
   init() {
@@ -498,10 +540,8 @@ const Store = {
         console.error(e);
       }
     }
-    // 사용자가 너무 어지럽지 않도록 화면 흔들림 기본값은 완전 OFF로 초기화
-    if (this.settings.screenShake === undefined || this.settings.screenShake === true) {
+    if (this.settings.screenShake === undefined) {
       this.settings.screenShake = false;
-      this.saveSettings();
     }
 
     const savedData = localStorage.getItem(this.STORAGE_KEY);
@@ -604,47 +644,6 @@ const SpeechEngine = {
 
   stopSpeak() {
     if (this.synth) this.synth.cancel();
-  },
-
-  startListen(lang, onResult, onEnd, onError) {
-    if (!this.recognition) {
-      alert('이 브라우저는 음성 인식(STT)을 지원하지 않습니다. 키보드 타자 모드를 이용해 주세요.');
-      return;
-    }
-    if (this.isRecognizing) {
-      this.recognition.stop();
-      return;
-    }
-
-    this.recognition.lang = lang;
-    this.isRecognizing = true;
-
-    this.recognition.onresult = (event) => {
-      let finalTranscript = '';
-      for (let i = event.resultIndex; i < event.results.length; ++i) {
-        finalTranscript += event.results[i][0].transcript;
-      }
-      if (onResult) onResult(finalTranscript);
-    };
-
-    this.recognition.onerror = (e) => {
-      this.isRecognizing = false;
-      if (onError) onError(e);
-    };
-
-    this.recognition.onend = () => {
-      this.isRecognizing = false;
-      if (onEnd) onEnd();
-    };
-
-    this.recognition.start();
-  },
-
-  stopListen() {
-    if (this.recognition && this.isRecognizing) {
-      this.recognition.stop();
-      this.isRecognizing = false;
-    }
   }
 };
 
@@ -659,11 +658,30 @@ const App = {
   combo: 0,
   sidebarFilter: 'all',
 
-  // 5단계 블라인드 타자 상태
-  typingStats: {
-    startTime: null,
-    totalChars: 0,
-    errors: 0
+  // STAGE 3: 초성 단어 락커 상태
+  stage3State: {
+    words: [],
+    activeIndex: 0
+  },
+
+  // STAGE 4: 스노우볼 30% 징검다리 상태
+  stage4State: {
+    items: []
+  },
+
+  // DRILL: 타임어택 단어 나열 상태
+  scrambleState: {
+    targetWords: [],
+    selectedWords: [],
+    remainingWords: []
+  },
+
+  // 타임어택 공통 타이머 객체 (STAGE 5 & DRILL용)
+  timer: {
+    intervalId: null,
+    totalSeconds: 0,
+    remainingSeconds: 0,
+    onTimeOver: null
   },
 
   init() {
@@ -700,14 +718,12 @@ const App = {
     document.documentElement.style.setProperty('--font-scale', Store.settings.fontScale);
     document.getElementById('ttsRateSelect').value = Store.settings.ttsRate;
 
-    // 2단계 난이도 기본값 활성화
     document.querySelectorAll('.btn-fade').forEach(btn => {
       btn.classList.toggle('active', parseInt(btn.dataset.level, 10) === Store.settings.clozeLevel);
     });
   },
 
   bindEvents() {
-    // 1. 헤더 컨트롤
     document.getElementById('textSelect').addEventListener('change', (e) => {
       this.loadText(e.target.value);
     });
@@ -716,9 +732,7 @@ const App = {
       Store.settings.screenShake = !Store.settings.screenShake;
       Store.saveSettings();
       this.applySettingsToUI();
-      if (Store.settings.screenShake) {
-        SoundFX.playHit(0);
-      }
+      if (Store.settings.screenShake) SoundFX.playHit(0);
     });
 
     document.getElementById('btnSoundToggle').addEventListener('click', () => {
@@ -750,7 +764,7 @@ const App = {
       this.applySettingsToUI();
     });
 
-    // 2. 5대 마스터리 탭
+    // 네비 탭
     document.querySelectorAll('.nav-tab').forEach(tab => {
       tab.addEventListener('click', () => {
         const mode = tab.dataset.mode;
@@ -758,7 +772,7 @@ const App = {
       });
     });
 
-    // 3. 카드 제어 버튼
+    // 기본 버튼
     document.getElementById('btnPrevSentence').addEventListener('click', () => this.prevSentence());
     document.getElementById('btnNextSentence').addEventListener('click', () => this.nextSentence());
     document.getElementById('btnMarkMemorized').addEventListener('click', () => this.markCurrentAsMemorized());
@@ -766,14 +780,12 @@ const App = {
     document.getElementById('btnSpeakCurrent').addEventListener('click', () => this.speakCurrentSentence());
     document.getElementById('btnToggleWeakness').addEventListener('click', () => this.toggleCurrentWeakness());
 
-    // 4. 서브 컨트롤
     document.getElementById('ttsRateSelect').addEventListener('change', (e) => {
       Store.settings.ttsRate = parseFloat(e.target.value);
       Store.saveSettings();
     });
     document.getElementById('btnPlayFullTTS').addEventListener('click', () => this.playFullTextTTS());
 
-    // 2단계 키워드 난이도
     document.querySelectorAll('.btn-fade').forEach(btn => {
       btn.addEventListener('click', () => {
         document.querySelectorAll('.btn-fade').forEach(b => b.classList.remove('active'));
@@ -784,33 +796,27 @@ const App = {
       });
     });
 
-    // 5. 5단계 블라인드 타자
-    const typingInput = document.getElementById('typingInput');
-    typingInput.addEventListener('input', (e) => this.handleBlindTypingInput(e));
-    typingInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && !e.shiftKey) {
+    // STAGE 3: 초성 락커 입력 이벤트
+    const chosungInput = document.getElementById('chosungWordInput');
+    chosungInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
         e.preventDefault();
-        this.checkBlindTypingComplete();
+        this.submitChosungWord();
       }
     });
+    document.getElementById('btnSubmitChosungWord').addEventListener('click', () => this.submitChosungWord());
 
-    // 6. 음성 인식
-    document.getElementById('btnStartVoiceRec').addEventListener('click', () => this.toggleVoiceRecognition());
+    // STAGE 4: 스노우볼 조립 검사 버튼
+    document.getElementById('btnCheckSnowball').addEventListener('click', () => this.checkSnowballSlots());
 
-    document.getElementById('btnTypeModeKey').addEventListener('click', () => {
-      document.getElementById('btnTypeModeKey').classList.add('active');
-      document.getElementById('btnTypeModeVoice').classList.remove('active');
-      document.getElementById('typingArea').classList.remove('hidden');
-      document.getElementById('voiceArea').classList.add('hidden');
-    });
-    document.getElementById('btnTypeModeVoice').addEventListener('click', () => {
-      document.getElementById('btnTypeModeVoice').classList.add('active');
-      document.getElementById('btnTypeModeKey').classList.remove('active');
-      document.getElementById('typingArea').classList.add('hidden');
-      document.getElementById('voiceArea').classList.remove('hidden');
-    });
+    // DRILL: 스크램블 리셋 버튼
+    document.getElementById('btnResetScramble').addEventListener('click', () => this.resetScramble());
 
-    // 7. 사이드바 필터
+    // STAGE 5: 블라인드 타자
+    const typingInput = document.getElementById('typingInput');
+    typingInput.addEventListener('input', (e) => this.handleBlindTypingInput(e));
+
+    // 사이드바 필터
     document.querySelectorAll('.filter-chip').forEach(chip => {
       chip.addEventListener('click', () => {
         document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
@@ -831,13 +837,12 @@ const App = {
       }
     });
 
-    // 8. 전역 키보드 단축키
+    // 전역 단축키
     window.addEventListener('keydown', (e) => {
       const activeEl = document.activeElement;
       if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) {
         return;
       }
-
       if (e.code === 'Space') {
         e.preventDefault();
         this.toggleReveal();
@@ -855,7 +860,6 @@ const App = {
       }
     });
 
-    // 9. 스테이지 클리어 모달에서 다음 스테이지로 진격 버튼
     document.getElementById('btnProceedNextStage').addEventListener('click', () => {
       document.getElementById('modalStageClear').classList.add('hidden');
       if (typeof this.currentMode === 'number' && this.currentMode < 5) {
@@ -1032,6 +1036,7 @@ const App = {
   },
 
   loadText(textId) {
+    this.stopTimer();
     Store.setCurrentTextId(textId);
     this.currentIndex = 0;
     this.revealed = false;
@@ -1049,6 +1054,7 @@ const App = {
   },
 
   setMode(mode) {
+    this.stopTimer();
     this.currentMode = mode;
     this.revealed = false;
 
@@ -1059,10 +1065,10 @@ const App = {
     const badgeMap = {
       1: 'STAGE 1: 정독 & 뇌새김',
       2: 'STAGE 2: 키워드 강제인출',
-      3: 'STAGE 3: 초성 락커',
-      4: 'STAGE 4: 스노우볼 체이닝',
-      5: 'STAGE 5: 백지 블라인드',
-      'drill': '🔥 취약 문장 지옥훈련'
+      3: 'STAGE 3: 초성 단어 락커',
+      4: 'STAGE 4: 스노우볼 30% 조립',
+      5: 'STAGE 5: 타임어택 백지 블라인드',
+      'drill': '🔥 타임어택 단어 나열'
     };
     document.getElementById('currentModeBadge').textContent = badgeMap[mode] || '학습 모드';
 
@@ -1095,7 +1101,63 @@ const App = {
     return list[this.currentIndex];
   },
 
+  // --------------------------------------------------------------------------
+  // 타임어택 카운트다운 타이머 제어기
+  // --------------------------------------------------------------------------
+  startTimer(seconds, onTimeOver) {
+    this.stopTimer();
+    this.timer.totalSeconds = seconds;
+    this.timer.remainingSeconds = seconds;
+    this.timer.onTimeOver = onTimeOver;
+
+    const timerBox = document.getElementById('timerBarContainer');
+    const timerFill = document.getElementById('timerFill');
+    const countdownText = document.getElementById('timerCountdownText');
+
+    timerBox.classList.remove('hidden');
+    timerFill.style.width = '100%';
+    countdownText.textContent = `${seconds}s`;
+
+    const startTime = Date.now();
+    const durationMs = seconds * 1000;
+
+    this.timer.intervalId = setInterval(() => {
+      const elapsed = Date.now() - startTime;
+      const leftMs = Math.max(0, durationMs - elapsed);
+      const leftSec = Math.ceil(leftMs / 1000);
+
+      const pct = (leftMs / durationMs) * 100;
+      timerFill.style.width = `${pct}%`;
+      countdownText.textContent = `${leftSec}s`;
+
+      if (leftSec <= 3 && leftSec > 0 && Math.floor(leftMs / 500) % 2 === 0) {
+        SoundFX.playTimerTick();
+      }
+
+      if (leftMs <= 0) {
+        this.stopTimer();
+        SoundFX.playTimeOver();
+        if (this.timer.onTimeOver) {
+          this.timer.onTimeOver();
+        }
+      }
+    }, 100);
+  },
+
+  stopTimer() {
+    if (this.timer.intervalId) {
+      clearInterval(this.timer.intervalId);
+      this.timer.intervalId = null;
+    }
+    const timerBox = document.getElementById('timerBarContainer');
+    if (timerBox) timerBox.classList.add('hidden');
+  },
+
+  // --------------------------------------------------------------------------
+  // 카드 렌더링 코어
+  // --------------------------------------------------------------------------
   renderCardContent() {
+    this.stopTimer();
     const item = this.getCurrentSentenceData();
     const curText = Store.getCurrentText();
 
@@ -1104,9 +1166,7 @@ const App = {
         document.getElementById('targetDisplayText').innerHTML = '🎉 등록된 취약 문장이 없습니다!<br><span style="font-size:0.9rem; color:var(--text-muted)">다른 단계에서 별표(⭐)를 눌러 취약 문장을 추가해보세요.</span>';
         document.getElementById('sentenceCounter').textContent = '0 / 0';
         document.getElementById('stepSentenceStatus').textContent = '완벽 클리어!';
-        document.getElementById('revealArea').classList.add('hidden');
-        document.getElementById('typingArea').classList.add('hidden');
-        document.getElementById('voiceArea').classList.add('hidden');
+        this.hideAllCardContainers();
         return;
       }
       return;
@@ -1116,7 +1176,6 @@ const App = {
     const totalCount = this.getActiveSentences().length;
     document.getElementById('sentenceCounter').textContent = `문장 ${this.currentIndex + 1} / ${totalCount}`;
 
-    // 현재 스텝 통과 개수 표시
     if (typeof this.currentMode === 'number') {
       const stepProg = (curText.stepProgress && curText.stepProgress[this.currentMode]) || {};
       const passedCount = Object.keys(stepProg).filter(k => stepProg[k]).length;
@@ -1125,94 +1184,79 @@ const App = {
       document.getElementById('stepSentenceStatus').textContent = `취약 문장 훈련 중`;
     }
 
-    // 취약 문장 뱃지
     const isWeak = (curText.weakList || []).includes(originalIndex);
     document.getElementById('weaknessBadge').classList.toggle('hidden', !isWeak);
     document.getElementById('btnToggleWeakness').classList.toggle('starred', isWeak);
     document.getElementById('starIcon').textContent = isWeak ? '★' : '⭐';
 
-    const textDisplayBox = document.getElementById('targetDisplayText');
-    const revealArea = document.getElementById('revealArea');
-    const typingArea = document.getElementById('typingArea');
-    const voiceArea = document.getElementById('voiceArea');
-    const contextPreviewBox = document.getElementById('contextPreviewBox');
-    const errorAlertBanner = document.getElementById('errorAlertBanner');
-
-    revealArea.classList.add('hidden');
-    typingArea.classList.add('hidden');
-    voiceArea.classList.add('hidden');
-    contextPreviewBox.classList.add('hidden');
-    errorAlertBanner.classList.add('hidden');
+    this.hideAllCardContainers();
     this.revealed = false;
-    document.getElementById('revealedOriginalText').classList.add('hidden');
+    document.getElementById('revealedTextContent').textContent = sentence;
 
     // -------------------------------------------------------------
     // STAGE 1: 정독 & 뇌새김
     // -------------------------------------------------------------
     if (this.currentMode === 1) {
-      textDisplayBox.innerHTML = this.escapeHtml(sentence);
+      document.getElementById('targetDisplayText').innerHTML = this.escapeHtml(sentence);
     }
     // -------------------------------------------------------------
-    // STAGE 2: 키워드 강제인출 (NLP 형태소 분석 기반 중요 키워드 우선 소멸)
+    // STAGE 2: 키워드 강제인출
     // -------------------------------------------------------------
     else if (this.currentMode === 2) {
-      revealArea.classList.remove('hidden');
-      textDisplayBox.innerHTML = NLPAnalyzer.generateKeywordCloze(sentence, Store.settings.clozeLevel, curText.language);
-      document.getElementById('revealedTextContent').textContent = sentence;
+      document.getElementById('revealArea').classList.remove('hidden');
+      document.getElementById('targetDisplayText').innerHTML = NLPAnalyzer.generateKeywordCloze(sentence, Store.settings.clozeLevel, curText.language);
     }
     // -------------------------------------------------------------
-    // STAGE 3: 초성 락커 (원문 0%, 초성만으로 전체 인출)
+    // STAGE 3: 초성 단어 락커 (단어별 초성 칩 맞추기)
     // -------------------------------------------------------------
     else if (this.currentMode === 3) {
-      revealArea.classList.remove('hidden');
-      textDisplayBox.innerHTML = NLPAnalyzer.generateChosungPrompt(sentence, curText.language);
-      document.getElementById('revealedTextContent').textContent = sentence;
+      document.getElementById('targetDisplayText').innerHTML = `<span style="font-size:1.15rem; color:var(--text-muted)">💡 초성 칩을 클릭하고 원래 단어를 입력하여 [✅]를 띄우세요!</span>`;
+      document.getElementById('stage3ChosungArea').classList.remove('hidden');
+      document.getElementById('revealArea').classList.remove('hidden');
+      this.setupStage3Chosung(sentence, curText.language);
     }
     // -------------------------------------------------------------
-    // STAGE 4: 스노우볼 체이닝 (배우식 누적 폭풍 암기)
+    // STAGE 4: 스노우볼 30% 징검다리 조립
     // -------------------------------------------------------------
     else if (this.currentMode === 4) {
-      revealArea.classList.remove('hidden');
-      contextPreviewBox.classList.remove('hidden');
-
-      const prevSentences = curText.sentences.slice(0, originalIndex);
-      if (prevSentences.length > 0) {
-        contextPreviewBox.innerHTML = `<strong>앞선 문장 연결 사슬:</strong><br>${prevSentences.map((s, idx) => `[${idx + 1}] ${s}`).join('<br>')}`;
-      } else {
-        contextPreviewBox.innerHTML = `<strong>첫 문장 개시!</strong> 거대한 스노우볼의 첫 번째 뼈대를 세우세요.`;
-      }
-
-      document.getElementById('chainingRangeText').textContent = `누적 범위: 1번 ~ ${originalIndex + 1}번 문장 연쇄`;
-      // 현재 문장은 초성으로만 노출하여 인출 자극
-      textDisplayBox.innerHTML = NLPAnalyzer.generateChosungPrompt(sentence, curText.language);
-      document.getElementById('revealedTextContent').textContent = sentence;
+      document.getElementById('targetDisplayText').innerHTML = `<span style="font-size:1.15rem; color:var(--text-muted)">🔗 30% 힌트를 징검다리 삼아 빈칸을 직접 타이핑하여 완성하세요!</span>`;
+      document.getElementById('stage4SnowballArea').classList.remove('hidden');
+      document.getElementById('revealArea').classList.remove('hidden');
+      this.setupStage4Snowball(sentence);
     }
     // -------------------------------------------------------------
-    // STAGE 5 or 드릴: 백지 블라인드 타자 (정답 완전 비노출)
+    // STAGE 5: 타임어택 백지 블라인드
     // -------------------------------------------------------------
-    else if (this.currentMode === 5 || this.currentMode === 'drill') {
-      textDisplayBox.innerHTML = `<span style="color:var(--text-dim); font-size:1.15rem;">🔒 정답은 봉인되어 있습니다. 머릿속의 기억만으로 첫 글자부터 타이핑하세요!</span>`;
-      typingArea.classList.remove('hidden');
-      
-      const typingInput = document.getElementById('typingInput');
-      typingInput.value = '';
-      typingInput.focus();
-
-      this.typingStats = {
-        startTime: null,
-        totalChars: 0,
-        errors: 0
-      };
-      
-      // 블라인드 결과창 초기화 (정답 노출 없음!)
-      this.updateBlindTypedView('');
-      this.updateTypingStatsUI();
+    else if (this.currentMode === 5) {
+      document.getElementById('targetDisplayText').innerHTML = `<span style="color:var(--accent-rose); font-weight:800;">⚡ 타임어택! 제한시간 내에 입력하지 못하면 처음부터 다시 작성합니다!</span>`;
+      document.getElementById('typingArea').classList.remove('hidden');
+      this.setupStage5Blind(sentence);
+    }
+    // -------------------------------------------------------------
+    // DRILL: 타임어택 단어 나열
+    // -------------------------------------------------------------
+    else if (this.currentMode === 'drill') {
+      document.getElementById('targetDisplayText').innerHTML = `<span style="color:var(--accent-gold); font-weight:800;">⏱️ 타임어택 단어 나열! 제한시간 내에 올바른 순서대로 단어를 클릭하세요!</span>`;
+      document.getElementById('drillScrambleArea').classList.remove('hidden');
+      this.setupDrillScramble(sentence);
     }
 
     this.renderSentenceList();
   },
 
-  // 빈칸 클릭 시 팡! 소리와 함께 공개
+  hideAllCardContainers() {
+    document.getElementById('stage3ChosungArea').classList.add('hidden');
+    document.getElementById('stage4SnowballArea').classList.add('hidden');
+    document.getElementById('drillScrambleArea').classList.add('hidden');
+    document.getElementById('typingArea').classList.add('hidden');
+    document.getElementById('revealArea').classList.add('hidden');
+    document.getElementById('revealedOriginalText').classList.add('hidden');
+    document.getElementById('errorAlertBanner').classList.add('hidden');
+  },
+
+  // --------------------------------------------------------------------------
+  // STAGE 2: 빈칸 클릭 핸들러
+  // --------------------------------------------------------------------------
   handleClozeClick(el) {
     if (el.classList.contains('revealed')) return;
     const ans = decodeURIComponent(el.dataset.ans);
@@ -1226,32 +1270,228 @@ const App = {
     this.addCombo();
   },
 
-  // 5단계 완전 블라인드 타자 실시간 처리 (정답 미리보기 완전 배제)
+  // --------------------------------------------------------------------------
+  // STAGE 3: 초성 단어 락커 모듈
+  // --------------------------------------------------------------------------
+  setupStage3Chosung(sentence, lang) {
+    const rawTokens = sentence.split(/(\s+)/);
+    const wordList = [];
+    rawTokens.forEach(token => {
+      if (!/^\s+$/.test(token) && token.length > 0) {
+        wordList.push({
+          word: token,
+          chosung: NLPAnalyzer.getWordChosung(token, lang),
+          solved: false
+        });
+      }
+    });
+
+    this.stage3State.words = wordList;
+    this.stage3State.activeIndex = 0;
+    this.renderStage3ChosungGrid();
+  },
+
+  renderStage3ChosungGrid() {
+    const grid = document.getElementById('chosungChipsGrid');
+    const { words, activeIndex } = this.stage3State;
+
+    grid.innerHTML = words.map((item, idx) => {
+      if (item.solved) {
+        return `<div class="chosung-word-chip solved">${this.escapeHtml(item.word)} ✅</div>`;
+      }
+      const isActive = idx === activeIndex;
+      return `<div class="chosung-word-chip ${isActive ? 'active' : ''}" onclick="App.selectChosungChip(${idx})">[${this.escapeHtml(item.chosung)}]</div>`;
+    }).join('');
+
+    const activeItem = words[activeIndex];
+    const hintLabel = document.getElementById('activeChosungHint');
+    const inputEl = document.getElementById('chosungWordInput');
+
+    if (activeItem && !activeItem.solved) {
+      hintLabel.textContent = `[${activeItem.chosung}]`;
+      inputEl.value = '';
+      inputEl.disabled = false;
+      inputEl.focus();
+    } else {
+      hintLabel.textContent = '완료!';
+      inputEl.disabled = true;
+    }
+  },
+
+  selectChosungChip(index) {
+    const item = this.stage3State.words[index];
+    if (item && !item.solved) {
+      this.stage3State.activeIndex = index;
+      this.renderStage3ChosungGrid();
+    }
+  },
+
+  submitChosungWord() {
+    const inputEl = document.getElementById('chosungWordInput');
+    const userVal = inputEl.value.trim();
+    const { words, activeIndex } = this.stage3State;
+    const activeItem = words[activeIndex];
+    if (!activeItem || activeItem.solved) return;
+
+    const cleanInput = Store.settings.punctFlexible ? userVal.replace(/[^\w가-힣]/g, '') : userVal;
+    const cleanTarget = Store.settings.punctFlexible ? activeItem.word.replace(/[^\w가-힣]/g, '') : activeItem.word;
+
+    if (cleanInput.toLowerCase() === cleanTarget.toLowerCase()) {
+      // ✅ 정답!
+      activeItem.solved = true;
+      SoundFX.playWordCheck();
+      VisualFX.spawnHit(window.innerWidth / 2, window.innerHeight / 2, 8);
+      this.addCombo();
+
+      // 다음 미해결 단어로 자동 이동
+      const nextUnsolved = words.findIndex((w, i) => i > activeIndex && !w.solved);
+      if (nextUnsolved >= 0) {
+        this.stage3State.activeIndex = nextUnsolved;
+      } else {
+        const anyUnsolved = words.findIndex(w => !w.solved);
+        if (anyUnsolved >= 0) {
+          this.stage3State.activeIndex = anyUnsolved;
+        } else {
+          // 🎉 문장 내 모든 초성 단어 정복 완료!
+          this.renderStage3ChosungGrid();
+          SoundFX.playSentenceMastered();
+          VisualFX.spawnBurst(window.innerWidth / 2, window.innerHeight / 2, 50);
+          setTimeout(() => {
+            this.markCurrentAsMemorized(false);
+          }, 600);
+          return;
+        }
+      }
+      this.renderStage3ChosungGrid();
+    } else {
+      // ❌ 오답
+      SoundFX.playErrorThud();
+      VisualFX.shake('error');
+      inputEl.classList.add('shake-error');
+      setTimeout(() => inputEl.classList.remove('shake-error'), 250);
+    }
+  },
+
+  // --------------------------------------------------------------------------
+  // STAGE 4: 스노우볼 30% 징검다리 조립 모듈
+  // --------------------------------------------------------------------------
+  setupStage4Snowball(sentence) {
+    const tokens = sentence.split(/\s+/).filter(t => t.length > 0);
+    // 30%의 단어만 힌트로 제공 (최소 1개)
+    const hintCount = Math.max(1, Math.round(tokens.length * 0.3));
+    const step = tokens.length / hintCount;
+    const hintIndices = new Set();
+    for (let i = 0; i < hintCount; i++) {
+      hintIndices.add(Math.min(tokens.length - 1, Math.floor(i * step)));
+    }
+
+    const items = tokens.map((token, idx) => ({
+      word: token,
+      isHint: hintIndices.has(idx),
+      solved: hintIndices.has(idx)
+    }));
+
+    this.stage4State.items = items;
+    const container = document.getElementById('snowballSlotsBox');
+
+    container.innerHTML = items.map((item, idx) => {
+      if (item.isHint) {
+        return `<span class="snowball-chip-hint">💡 ${this.escapeHtml(item.word)}</span>`;
+      }
+      return `<input type="text" class="snowball-slot-input" data-idx="${idx}" data-ans="${encodeURIComponent(item.word)}" placeholder="직접 입력" autocomplete="off" spellcheck="false">`;
+    }).join('');
+
+    // 인풋 포커스 및 엔터 이동
+    const inputs = container.querySelectorAll('.snowball-slot-input');
+    inputs.forEach((inp, i) => {
+      inp.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          this.checkSingleSnowballInput(inp);
+          if (inputs[i + 1]) inputs[i + 1].focus();
+          else document.getElementById('btnCheckSnowball').focus();
+        }
+      });
+      inp.addEventListener('blur', () => this.checkSingleSnowballInput(inp));
+    });
+
+    if (inputs[0]) inputs[0].focus();
+  },
+
+  checkSingleSnowballInput(inp) {
+    const val = inp.value.trim();
+    const ans = decodeURIComponent(inp.dataset.ans);
+    const cleanIn = Store.settings.punctFlexible ? val.replace(/[^\w가-힣]/g, '').toLowerCase() : val;
+    const cleanAns = Store.settings.punctFlexible ? ans.replace(/[^\w가-힣]/g, '').toLowerCase() : ans;
+
+    if (cleanIn.length > 0 && cleanIn === cleanAns) {
+      if (!inp.classList.contains('correct')) {
+        inp.classList.add('correct');
+        inp.value = ans;
+        SoundFX.playWordCheck();
+        VisualFX.spawnHit(inp.getBoundingClientRect().left + 40, inp.getBoundingClientRect().top + 10, 6);
+      }
+    }
+  },
+
+  checkSnowballSlots() {
+    const container = document.getElementById('snowballSlotsBox');
+    const inputs = Array.from(container.querySelectorAll('.snowball-slot-input'));
+    let allCorrect = true;
+
+    inputs.forEach(inp => {
+      this.checkSingleSnowballInput(inp);
+      if (!inp.classList.contains('correct')) {
+        allCorrect = false;
+      }
+    });
+
+    if (allCorrect) {
+      SoundFX.playSentenceMastered();
+      VisualFX.spawnBurst(window.innerWidth / 2, window.innerHeight / 2, 50);
+      setTimeout(() => {
+        this.markCurrentAsMemorized(false);
+      }, 600);
+    } else {
+      SoundFX.playErrorThud();
+      VisualFX.shake('error');
+      alert('아직 비어있거나 틀린 슬롯이 있습니다. 30% 힌트를 보며 다시 채워보세요!');
+    }
+  },
+
+  // --------------------------------------------------------------------------
+  // STAGE 5: 타임어택 백지 블라인드 모듈 (제한시간 초과 시 처음부터 다시 쓰기)
+  // --------------------------------------------------------------------------
+  setupStage5Blind(sentence) {
+    const typingInput = document.getElementById('typingInput');
+    typingInput.value = '';
+    typingInput.disabled = false;
+    typingInput.focus();
+
+    this.updateBlindTypedView('');
+    document.getElementById('errorAlertBanner').classList.add('hidden');
+
+    // 제한시간 계산 (약 10초 ~ 30초)
+    const timeLimit = Math.max(8, Math.round(sentence.length * 0.75 + 4));
+
+    // 타이머 시작!
+    this.startTimer(timeLimit, () => {
+      // 💥 타임오버 처리: 입력 초기화 및 처음부터 재도전!
+      alert(`⏰ [타임오버!] ${timeLimit}초 안에 완주하지 못했습니다.\n이 문장을 처음부터 다시 도전합니다!`);
+      this.setupStage5Blind(sentence);
+    });
+  },
+
   handleBlindTypingInput(e) {
     const inputVal = e.target.value;
     const item = this.getCurrentSentenceData();
     if (!item) return;
 
-    if (!this.typingStats.startTime) {
-      this.typingStats.startTime = Date.now();
-    }
-
     SoundFX.playKeyClick();
-    this.checkBlindTypingRealtime(inputVal, item.sentence);
-  },
-
-  // 블라인드 타자 실시간 정밀 채점
-  checkBlindTypingRealtime(inputVal, target) {
+    const target = item.sentence;
     const errorBanner = document.getElementById('errorAlertBanner');
     const errorText = document.getElementById('errorAlertText');
 
-    if (!inputVal) {
-      this.updateBlindTypedView('');
-      errorBanner.classList.add('hidden');
-      return;
-    }
-
-    // 일치 여부 비교 (구두점 유연 모드)
     let hasError = false;
     let correctPrefix = '';
     let errorChar = '';
@@ -1273,51 +1513,41 @@ const App = {
       }
     }
 
-    // 화면 뷰 갱신: 맞춘 글자만 네온 그린으로 채움!
     this.updateBlindTypedView(correctPrefix);
 
     if (hasError) {
-      // 💥 오답 발생! 틀릴 때만 빨간색 경고 배너와 소리로 알려줌!
-      this.typingStats.errors++;
       SoundFX.playErrorThud();
       VisualFX.shake('error');
       this.combo = 0;
       this.updateComboUI();
-
       errorBanner.classList.remove('hidden');
-      const curIndexInTarget = correctPrefix.length;
-      const expectedChar = target[curIndexInTarget] || '';
-      errorText.innerHTML = `💥 <strong>[오답 발생!]</strong> 입력한 '<strong>${this.escapeHtml(errorChar)}</strong>' 자리가 틀렸습니다. (백스페이스로 지우고 다시 쳐보세요!)`;
+      errorText.innerHTML = `💥 <strong>[오답 발생!]</strong> 입력한 '<strong>${this.escapeHtml(errorChar)}</strong>' 자리가 틀렸습니다. (지우고 다시 입력하세요)`;
     } else {
       errorBanner.classList.add('hidden');
       this.addCombo();
       SoundFX.playHit(this.combo);
-      VisualFX.shake('hit');
-
-      const inputEl = document.getElementById('typingInput');
-      const rect = inputEl.getBoundingClientRect();
-      VisualFX.spawnHit(rect.left + rect.width / 2, rect.top + 20, 5);
+      VisualFX.spawnHit(window.innerWidth / 2, window.innerHeight / 2, 4);
     }
 
-    // 문장 전체 완성 검사
+    // 완성 검사
     const cleanInput = Store.settings.punctFlexible ? inputVal.replace(/[^\w가-힣]/g, '') : inputVal.trim();
     const cleanTarget = Store.settings.punctFlexible ? target.replace(/[^\w가-힣]/g, '') : target.trim();
 
     if (cleanInput.length >= cleanTarget.length && cleanInput === cleanTarget) {
-      this.onSentenceCompleted();
+      // 💥 제한시간 내 완주 성공!
+      this.stopTimer();
+      SoundFX.playSentenceMastered();
+      VisualFX.spawnBurst(window.innerWidth / 2, window.innerHeight / 2, 60);
+      this.markCurrentAsMemorized(false);
     }
-
-    this.updateTypingStatsUI();
   },
 
-  // 맞춘 글자만 보여주는 블라인드 뷰
   updateBlindTypedView(correctPrefix) {
     const view = document.getElementById('blindTypedView');
     if (!correctPrefix) {
       view.innerHTML = `<span class="blind-placeholder">머릿속에서 기억을 끄집어내어 타이핑을 시작하세요...</span>`;
       return;
     }
-
     view.innerHTML = `
       <span class="blind-char-correct">${this.escapeHtml(correctPrefix)}</span>
       <span class="blind-char-cursor"></span>
@@ -1329,46 +1559,140 @@ const App = {
     return ch.toLowerCase().replace(/['"`.,~!?\s]/g, '');
   },
 
-  checkBlindTypingComplete() {
-    const inputVal = document.getElementById('typingInput').value;
-    const item = this.getCurrentSentenceData();
-    if (!item) return;
+  // --------------------------------------------------------------------------
+  // DRILL: 취약 문장 타임어택 단어 나열 모듈 (Scramble)
+  // --------------------------------------------------------------------------
+  setupDrillScramble(sentence) {
+    const rawTokens = sentence.split(/\s+/).filter(t => t.length > 0);
+    this.scrambleState.targetWords = [...rawTokens];
+    this.scrambleState.selectedWords = [];
+    this.scrambleState.remainingWords = [...rawTokens].sort(() => Math.random() - 0.5);
 
-    const cleanInput = Store.settings.punctFlexible ? inputVal.replace(/[^\w가-힣]/g, '') : inputVal.trim();
-    const cleanTarget = Store.settings.punctFlexible ? item.sentence.replace(/[^\w가-힣]/g, '') : item.sentence.trim();
+    this.renderDrillScramble();
 
-    if (cleanInput === cleanTarget) {
-      this.onSentenceCompleted();
+    // 단어당 2.2초 타임어택 배부
+    const timeLimit = Math.max(10, Math.round(rawTokens.length * 2.2));
+    this.startTimer(timeLimit, () => {
+      alert(`⏰ [타임오버!] 시간 초과로 단어가 다시 섞입니다!`);
+      this.setupDrillScramble(sentence);
+    });
+  },
+
+  renderDrillScramble() {
+    const tray = document.getElementById('scrambleSentenceTray');
+    const bank = document.getElementById('scrambleWordBank');
+    const { selectedWords, remainingWords } = this.scrambleState;
+
+    tray.innerHTML = selectedWords.length === 0
+      ? '<span style="color:var(--text-dim); font-size:0.9rem;">아래 단어를 순서대로 클릭하면 이곳에 채워집니다...</span>'
+      : selectedWords.map((word, i) => `<span class="word-pill in-tray">${this.escapeHtml(word)}</span>`).join('');
+
+    bank.innerHTML = remainingWords.map((word, idx) => 
+      `<button class="word-pill" onclick="App.clickScrambleWord(${idx})">${this.escapeHtml(word)}</button>`
+    ).join('');
+  },
+
+  clickScrambleWord(index) {
+    const { targetWords, selectedWords, remainingWords } = this.scrambleState;
+    const clickedWord = remainingWords[index];
+    const nextExpected = targetWords[selectedWords.length];
+
+    if (clickedWord === nextExpected) {
+      // ✅ 순서 일치!
+      selectedWords.push(clickedWord);
+      remainingWords.splice(index, 1);
+      SoundFX.playWordCheck();
+      VisualFX.spawnHit(window.innerWidth / 2, window.innerHeight / 2, 6);
+      this.renderDrillScramble();
+
+      if (selectedWords.length === targetWords.length) {
+        // 💥 전체 문장 조립 완료!
+        this.stopTimer();
+        SoundFX.playSentenceMastered();
+        VisualFX.spawnBurst(window.innerWidth / 2, window.innerHeight / 2, 50);
+        setTimeout(() => {
+          this.markCurrentAsMemorized(false);
+        }, 600);
+      }
     } else {
+      // ❌ 순서 불일치
       SoundFX.playErrorThud();
       VisualFX.shake('error');
-      alert('문장이 아직 완전히 일치하지 않습니다. 틀린 글자를 수정해주세요!');
     }
   },
 
-  onSentenceCompleted() {
-    SoundFX.playSentenceMastered();
-    VisualFX.shake('hit');
-    const card = document.getElementById('practiceCard');
-    const rect = card.getBoundingClientRect();
-    VisualFX.spawnBurst(rect.left + rect.width / 2, rect.top + rect.height / 2, 50);
-
-    this.markCurrentAsMemorized(false);
+  resetScramble() {
+    const item = this.getCurrentSentenceData();
+    if (item) this.setupDrillScramble(item.sentence);
   },
 
-  updateTypingStatsUI() {
-    const inputVal = document.getElementById('typingInput').value;
-    const totalChars = inputVal.length;
-    const errors = this.typingStats.errors;
+  // --------------------------------------------------------------------------
+  // 공통 마스터 체크 & 다음 문장 전환
+  // --------------------------------------------------------------------------
+  markCurrentAsMemorized(playSound = true) {
+    this.stopTimer();
+    const item = this.getCurrentSentenceData();
+    if (!item) return;
 
-    const acc = totalChars === 0 ? 100 : Math.max(0, Math.round(((totalChars - errors) / totalChars) * 100));
-    document.getElementById('typingAccuracy').textContent = `${acc}%`;
-    document.getElementById('typingErrors').textContent = errors;
+    const curText = Store.getCurrentText();
+    curText.stepProgress = curText.stepProgress || { 1: {}, 2: {}, 3: {}, 4: {}, 5: {} };
 
-    if (this.typingStats.startTime && totalChars > 0) {
-      const elapsedMins = (Date.now() - this.typingStats.startTime) / 60000;
-      const wpm = Math.round((totalChars / 5) / (elapsedMins || 0.01));
-      document.getElementById('typingSpeed').textContent = `${wpm} WPM`;
+    if (typeof this.currentMode === 'number') {
+      curText.stepProgress[this.currentMode] = curText.stepProgress[this.currentMode] || {};
+      curText.stepProgress[this.currentMode][item.originalIndex] = true;
+    }
+
+    if (this.currentMode === 'drill') {
+      curText.weakList = (curText.weakList || []).filter(idx => idx !== item.originalIndex);
+    }
+
+    Store.saveData();
+
+    if (playSound) {
+      SoundFX.playSentenceMastered();
+      VisualFX.spawnBurst(window.innerWidth / 2, window.innerHeight / 2, 30);
+    }
+
+    this.updateMasteryUI();
+    this.renderSentenceList();
+
+    const totalSentences = curText.sentences.length;
+    let stepAllCleared = false;
+
+    if (typeof this.currentMode === 'number') {
+      const stepProg = curText.stepProgress[this.currentMode] || {};
+      const passedCount = Object.keys(stepProg).filter(k => stepProg[k]).length;
+      if (passedCount >= totalSentences) {
+        stepAllCleared = true;
+      }
+    }
+
+    if (stepAllCleared) {
+      SoundFX.playStageClear();
+      VisualFX.spawnBurst(window.innerWidth / 2, window.innerHeight / 2, 80);
+
+      if (this.currentMode === 5) {
+        this.showCongratulationModal();
+      } else {
+        const stageNames = {
+          1: 'STAGE 1: 정독 & 뇌새김',
+          2: 'STAGE 2: 키워드 강제인출',
+          3: 'STAGE 3: 초성 단어 락커',
+          4: 'STAGE 4: 스노우볼 30% 조립',
+          5: 'STAGE 5: 타임어택 백지 블라인드'
+        };
+        const nextMode = this.currentMode + 1;
+        document.getElementById('stageClearTitle').textContent = `🎉 ${stageNames[this.currentMode]} 정복 완료!`;
+        document.getElementById('stageClearMessage').innerHTML = `
+          모든 문장의 훈련을 완벽하게 마스터했습니다!<br>
+          이제 다음 단계인 <strong>${stageNames[nextMode]}</strong> 단계로 진격합니다!
+        `;
+        document.getElementById('modalStageClear').classList.remove('hidden');
+      }
+    } else {
+      setTimeout(() => {
+        this.nextSentence();
+      }, 350);
     }
   },
 
@@ -1396,84 +1720,7 @@ const App = {
     const box = document.getElementById('revealedOriginalText');
     box.classList.toggle('hidden', !this.revealed);
     document.getElementById('revealBtnLabel').textContent = this.revealed ? '🙈 정답 가리기 (Space)' : '👁️ 정답 원문 확인 (Space)';
-    if (this.revealed) {
-      SoundFX.playHit(0);
-    }
-  },
-
-  // "완벽히 외웠음!" 버튼 동작: 현재 문장 마크 -> 다음 문장으로 스무스 전환 -> 스텝 완료 시 다음 스텝 자동 승급
-  markCurrentAsMemorized(playSound = true) {
-    const item = this.getCurrentSentenceData();
-    if (!item) return;
-
-    const curText = Store.getCurrentText();
-    curText.stepProgress = curText.stepProgress || { 1: {}, 2: {}, 3: {}, 4: {}, 5: {} };
-
-    // 현재 스텝에 마스터 체크
-    if (typeof this.currentMode === 'number') {
-      curText.stepProgress[this.currentMode] = curText.stepProgress[this.currentMode] || {};
-      curText.stepProgress[this.currentMode][item.originalIndex] = true;
-    }
-
-    if (this.currentMode === 'drill') {
-      curText.weakList = (curText.weakList || []).filter(idx => idx !== item.originalIndex);
-    }
-
-    Store.saveData();
-
-    if (playSound) {
-      SoundFX.playSentenceMastered();
-      const rect = document.getElementById('btnMarkMemorized').getBoundingClientRect();
-      VisualFX.spawnBurst(rect.left + rect.width / 2, rect.top + rect.height / 2, 30);
-      VisualFX.shake('hit');
-    }
-
-    this.updateMasteryUI();
-    this.renderSentenceList();
-
-    // 해당 스텝 전체 완료 여부 검사
-    const totalSentences = curText.sentences.length;
-    let stepAllCleared = false;
-
-    if (typeof this.currentMode === 'number') {
-      const stepProg = curText.stepProgress[this.currentMode] || {};
-      const passedCount = Object.keys(stepProg).filter(k => stepProg[k]).length;
-      if (passedCount >= totalSentences) {
-        stepAllCleared = true;
-      }
-    }
-
-    if (stepAllCleared) {
-      // 스테이지 클리어!
-      SoundFX.playStageClear();
-      VisualFX.spawnBurst(window.innerWidth / 2, window.innerHeight / 2, 80);
-
-      if (this.currentMode === 5) {
-        // 5단계 최종 완료!
-        this.showCongratulationModal();
-      } else {
-        // 1~4단계 클리어 시 축하 및 다음 스텝 전환 모달
-        const stageNames = {
-          1: 'STAGE 1: 정독 & 뇌새김',
-          2: 'STAGE 2: 키워드 강제인출',
-          3: 'STAGE 3: 초성 락커',
-          4: 'STAGE 4: 스노우볼 체이닝',
-          5: 'STAGE 5: 백지 블라인드'
-        };
-        const nextMode = this.currentMode + 1;
-        document.getElementById('stageClearTitle').textContent = `🎉 ${stageNames[this.currentMode]} 정복 완료!`;
-        document.getElementById('stageClearMessage').innerHTML = `
-          해당 지문의 모든 문장을 완벽하게 소화했습니다!<br>
-          이제 더 고난도인 <strong>${stageNames[nextMode]}</strong> 단계로 진격합니다!
-        `;
-        document.getElementById('modalStageClear').classList.remove('hidden');
-      }
-    } else {
-      // 스텝이 아직 덜 끝났으면 다음 문장으로 부드럽게 자동 전환!
-      setTimeout(() => {
-        this.nextSentence();
-      }, 350);
-    }
+    if (this.revealed) SoundFX.playHit(0);
   },
 
   toggleCurrentWeakness() {
@@ -1513,7 +1760,6 @@ const App = {
     const item = this.getCurrentSentenceData();
     const curText = Store.getCurrentText();
     if (!item) return;
-
     SoundFX.playHit(0);
     SpeechEngine.speak(item.sentence, curText.language, Store.settings.ttsRate);
   },
@@ -1535,55 +1781,11 @@ const App = {
     playNext();
   },
 
-  toggleVoiceRecognition() {
-    const btnMic = document.getElementById('btnStartVoiceRec');
-    const statusText = document.getElementById('voiceRecStatus');
-    const resultPreview = document.getElementById('voiceResultPreview');
-    const item = this.getCurrentSentenceData();
-    const curText = Store.getCurrentText();
-    if (!item) return;
-
-    if (SpeechEngine.isRecognizing) {
-      SpeechEngine.stopListen();
-      btnMic.classList.remove('recording');
-      statusText.textContent = '마이크 누르고 문장 외워서 말하기';
-      return;
-    }
-
-    btnMic.classList.add('recording');
-    statusText.textContent = '듣고 있습니다... 머릿속 문장을 외쳐보세요!';
-    resultPreview.textContent = '음성 입력 대기 중...';
-
-    SpeechEngine.startListen(
-      curText.language,
-      (transcript) => {
-        resultPreview.textContent = `인식 결과: "${transcript}"`;
-        const cleanInput = transcript.replace(/[^\w가-힣]/g, '').toLowerCase();
-        const cleanTarget = item.sentence.replace(/[^\w가-힣]/g, '').toLowerCase();
-
-        if (cleanTarget.includes(cleanInput) || cleanInput.includes(cleanTarget) || cleanInput === cleanTarget) {
-          resultPreview.innerHTML = `🎉 <strong style="color:#34d399">완벽 일치!</strong> ("${transcript}")`;
-          this.onSentenceCompleted();
-        }
-      },
-      () => {
-        btnMic.classList.remove('recording');
-        statusText.textContent = '마이크 누르고 문장 외워서 말하기';
-      },
-      () => {
-        btnMic.classList.remove('recording');
-        statusText.textContent = '마이크 누르고 문장 외워서 말하기';
-        resultPreview.textContent = '음성 인식 오류가 발생했습니다.';
-      }
-    );
-  },
-
   updateMasteryUI() {
     const curText = Store.getCurrentText();
     if (!curText || !curText.sentences || curText.sentences.length === 0) return;
 
     const total = curText.sentences.length;
-    // 5단계 최종 마스터 완료된 문장 기준 또는 현재 스텝 기준
     const finalProg = (curText.stepProgress && curText.stepProgress[5]) || {};
     const mastered = Object.keys(finalProg).filter(k => finalProg[k]).length;
     const pct = Math.round((mastered / total) * 100);
@@ -1592,8 +1794,7 @@ const App = {
     document.getElementById('masteryProgressBar').style.width = `${pct}%`;
     document.getElementById('sidebarCountBadge').textContent = `${mastered} / ${total}`;
 
-    // 현재 스텝 라벨
-    const stepLabel = typeof this.currentMode === 'number' ? `STAGE ${this.currentMode} 진행` : '지옥훈련 진행';
+    const stepLabel = typeof this.currentMode === 'number' ? `STAGE ${this.currentMode} 진행` : '타임어택 단어 나열';
     document.getElementById('stepProgressLabel').textContent = stepLabel;
   },
 

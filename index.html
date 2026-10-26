@@ -89,23 +89,23 @@
       </button>
       <button class="nav-tab" data-mode="3">
         <span class="tab-step">STAGE 3</span>
-        <span class="tab-title">💡 초성 락커</span>
-        <span class="tab-desc">단서만 보고 전체 인출</span>
+        <span class="tab-title">💡 초성 단어 락커</span>
+        <span class="tab-desc">단어별 초성 직접 격파</span>
       </button>
       <button class="nav-tab" data-mode="4">
         <span class="tab-step">STAGE 4</span>
-        <span class="tab-title">🔗 스노우볼 체이닝</span>
-        <span class="tab-desc">배우 대본식 누적 폭풍 암기</span>
+        <span class="tab-title">🔗 스노우볼 30%</span>
+        <span class="tab-desc">30% 힌트 + 70% 직접 채우기</span>
       </button>
       <button class="nav-tab" data-mode="5">
         <span class="tab-step">STAGE 5</span>
-        <span class="tab-title">⌨️ 백지 블라인드</span>
-        <span class="tab-desc">힌트 0% 완전 기억 인출</span>
+        <span class="tab-title">⚡ 타임어택 블라인드</span>
+        <span class="tab-desc">제한시간 내 완주 못하면 리셋</span>
       </button>
       <button class="nav-tab nav-tab-drill" data-mode="drill">
         <span class="tab-step">DRILL</span>
-        <span class="tab-title">🔥 취약 문장 지옥훈련</span>
-        <span class="tab-desc">오답 문장 100% 섬멸</span>
+        <span class="tab-title">🔥 타임어택 단어 나열</span>
+        <span class="tab-desc">제한시간 내 순서 재배열</span>
       </button>
     </nav>
 
@@ -148,22 +148,19 @@
               </div>
             </div>
 
-            <!-- 3단계: 초성 힌트 옵션 -->
+            <!-- 3단계: 초성 락커 안내 -->
             <div id="ctrlStep3" class="sub-ctrl-panel hidden">
-              <span class="preview-hint" style="color:var(--accent-gold)">💡 초성만 보고 소리 내어 전체 문장을 3번 외쳐보세요!</span>
+              <span class="preview-hint" style="color:var(--accent-gold)">💡 단어별 초성 칩을 클릭하고 원래 단어를 입력하여 [✅]를 만드세요!</span>
             </div>
 
-            <!-- 4단계: 체이닝 범위 안내 -->
+            <!-- 4단계: 스노우볼 30% 안내 -->
             <div id="ctrlStep4" class="sub-ctrl-panel hidden">
-              <span id="chainingRangeText" class="chain-info-text">누적 구간: 1번 ~ 1번 문장 폭풍 연쇄</span>
+              <span id="chainingRangeText" class="chain-info-text">🔗 30% 힌트 단어를 징검다리 삼아 나머지 70% 빈칸을 직접 타이핑하세요!</span>
             </div>
 
-            <!-- 5단계: 타자 / 마이크 모드 -->
+            <!-- 5단계: 타임어택 백지 블라인드 안내 -->
             <div id="ctrlStep5" class="sub-ctrl-panel hidden">
-              <div class="toggle-group">
-                <button id="btnTypeModeKey" class="btn-toggle active">⌨️ 블라인드 타자</button>
-                <button id="btnTypeModeVoice" class="btn-toggle">🎙️ 음성 구술 (STT)</button>
-              </div>
+              <span class="preview-hint" style="color:var(--accent-rose)">⚡ 제한시간 내에 백지 상태에서 끝까지 입력하지 못하면 처음부터 다시 씁니다!</span>
             </div>
           </div>
         </div>
@@ -175,6 +172,17 @@
 
           <!-- 메인 문장 카드 -->
           <div class="practice-card" id="practiceCard">
+            <!-- 타임어택 타이머 바 (STAGE 5 & DRILL용) -->
+            <div id="timerBarContainer" class="timer-bar-container hidden">
+              <div class="timer-header">
+                <span class="timer-label">⚡ TIME ATTACK:</span>
+                <strong id="timerCountdownText" class="timer-countdown">15s</strong>
+              </div>
+              <div class="timer-track">
+                <div id="timerFill" class="timer-fill" style="width: 100%"></div>
+              </div>
+            </div>
+
             <!-- 카드 헤더: 음성 재생 버튼 & 취약 북마크 -->
             <div class="card-top-actions">
               <button id="btnSpeakCurrent" class="action-circle-btn" title="이 문장 원어민 낭독 듣기">
@@ -190,6 +198,52 @@
               <p id="targetDisplayText" class="main-sentence-text">
                 문장을 불러오는 중입니다...
               </p>
+            </div>
+
+            <!-- STAGE 3: 단어별 초성 락커 영역 -->
+            <div id="stage3ChosungArea" class="stage3-chosung-container hidden">
+              <div class="chosung-chips-grid" id="chosungChipsGrid">
+                <!-- JS로 단어별 초성 칩 생성 -->
+              </div>
+              <div class="chosung-input-panel">
+                <span id="activeChosungHint" class="active-chosung-hint">[ㅇㄱㅎ]</span>
+                <input type="text" id="chosungWordInput" class="chosung-word-input" placeholder="이 초성의 원래 단어를 입력하고 Enter!" autocomplete="off" spellcheck="false">
+                <button id="btnSubmitChosungWord" class="btn btn-primary btn-sm">확인 (Enter)</button>
+              </div>
+            </div>
+
+            <!-- STAGE 4: 스노우볼 30% 징검다리 조립 영역 -->
+            <div id="stage4SnowballArea" class="stage4-snowball-container hidden">
+              <div class="snowball-info-tip">
+                💡 30%의 단어 힌트 칩을 보고, 빈칸 슬롯에 누락된 단어들을 직접 입력해 문장을 완성하세요!
+              </div>
+              <div class="snowball-slots-box" id="snowballSlotsBox">
+                <!-- JS로 30% 힌트 칩 + 직접 입력 슬롯 생성 -->
+              </div>
+              <div class="snowball-actions">
+                <button id="btnCheckSnowball" class="btn btn-primary">
+                  <span>⚡</span> 조립 완성 검사 (Enter)
+                </button>
+              </div>
+            </div>
+
+            <!-- DRILL: 타임어택 단어 나열 영역 -->
+            <div id="drillScrambleArea" class="drill-scramble-container hidden">
+              <div class="scramble-tray-box">
+                <div class="scramble-tray-label">🎯 완성할 문장 슬롯 (클릭한 순서대로 배열됩니다):</div>
+                <div id="scrambleSentenceTray" class="scramble-tray">
+                  <!-- 선택된 단어들이 올라가는 공간 -->
+                </div>
+              </div>
+              <div class="scramble-bank-box">
+                <div class="scramble-bank-label">🔀 무작위 단어 뱅크 (올바른 순서대로 클릭하세요):</div>
+                <div id="scrambleWordBank" class="scramble-bank">
+                  <!-- 셔플된 단어 칩들 -->
+                </div>
+              </div>
+              <div class="scramble-controls">
+                <button id="btnResetScramble" class="btn btn-secondary btn-sm">다시 배열하기</button>
+              </div>
             </div>
 
             <!-- 5단계 완전 블라인드 타자 영역 (정답 완전 비노출) -->
