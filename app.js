@@ -197,6 +197,100 @@ const SoundFX = {
     });
   },
 
+  // 끄투 스타일 장문 정답/완벽히 외움 연출 ("투두두둑!" + "뜬! 뜬! 딴~!")
+  playKkutuSuccess(onComplete) {
+    if (!this.enabled) {
+      if (onComplete) setTimeout(onComplete, 350);
+      return;
+    }
+    this.init();
+    if (!this.ctx) {
+      if (onComplete) setTimeout(onComplete, 350);
+      return;
+    }
+
+    const t = this.ctx.currentTime;
+
+    // 1단계: "투두두둑!" (빠른 고속 연속 타자 아르페지오 - 약 0.35초)
+    const rapidSteps = 8;
+    for (let i = 0; i < rapidSteps; i++) {
+      const stepT = t + i * 0.042;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+
+      osc.type = 'triangle';
+      const freq = 450 + i * 85;
+      osc.frequency.setValueAtTime(freq, stepT);
+      osc.frequency.exponentialRampToValueAtTime(freq * 1.3, stepT + 0.035);
+
+      gain.gain.setValueAtTime(0.25, stepT);
+      gain.gain.exponentialRampToValueAtTime(0.001, stepT + 0.038);
+
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(stepT);
+      osc.stop(stepT + 0.04);
+    }
+
+    // 2단계: "뜬! 뜬! 딴~!" (경쾌하고 웅장한 3단 팡파레)
+    // 뜬! (1타: 도5 523Hz)
+    const t1 = t + 0.38;
+    const osc1 = this.ctx.createOscillator();
+    const gain1 = this.ctx.createGain();
+    osc1.type = 'triangle';
+    osc1.frequency.setValueAtTime(523.25, t1);
+    gain1.gain.setValueAtTime(0.35, t1);
+    gain1.gain.exponentialRampToValueAtTime(0.001, t1 + 0.13);
+    osc1.connect(gain1);
+    gain1.connect(this.ctx.destination);
+    osc1.start(t1);
+    osc1.stop(t1 + 0.14);
+
+    // 뜬! (2타: 미5 659Hz)
+    const t2 = t + 0.52;
+    const osc2 = this.ctx.createOscillator();
+    const gain2 = this.ctx.createGain();
+    osc2.type = 'triangle';
+    osc2.frequency.setValueAtTime(659.25, t2);
+    gain2.gain.setValueAtTime(0.38, t2);
+    gain2.gain.exponentialRampToValueAtTime(0.001, t2 + 0.13);
+    osc2.connect(gain2);
+    gain2.connect(this.ctx.destination);
+    osc2.start(t2);
+    osc2.stop(t2 + 0.14);
+
+    // 딴~! (3타: 솔5 783Hz + 도6 1046Hz + 미6 1318Hz 웅장한 승리 화음)
+    const t3 = t + 0.66;
+    const finalChords = [783.99, 1046.50, 1318.51];
+    finalChords.forEach(freq => {
+      const osc3 = this.ctx.createOscillator();
+      const gain3 = this.ctx.createGain();
+      osc3.type = 'sine';
+      osc3.frequency.setValueAtTime(freq, t3);
+      gain3.gain.setValueAtTime(0.3, t3);
+      gain3.gain.exponentialRampToValueAtTime(0.001, t3 + 0.45);
+      osc3.connect(gain3);
+      gain3.connect(this.ctx.destination);
+      osc3.start(t3);
+      osc3.stop(t3 + 0.48);
+    });
+
+    // 뜬! 뜬! 딴~! 리듬에 맞춘 화려한 폭발 파티클
+    setTimeout(() => {
+      if (window.VisualFX) VisualFX.spawnBurst(window.innerWidth * 0.4, window.innerHeight * 0.45, 18);
+    }, 380);
+    setTimeout(() => {
+      if (window.VisualFX) VisualFX.spawnBurst(window.innerWidth * 0.6, window.innerHeight * 0.45, 22);
+    }, 520);
+    setTimeout(() => {
+      if (window.VisualFX) VisualFX.spawnBurst(window.innerWidth * 0.5, window.innerHeight * 0.4, 45);
+    }, 660);
+
+    if (onComplete) {
+      setTimeout(onComplete, 1150);
+    }
+  },
+
   // 스테이지 클리어 팡파레
   playStageClear() {
     if (!this.enabled) return;
@@ -553,21 +647,28 @@ const Store = {
       }
     }
 
-    if (!this.data.texts || this.data.texts.length === 0) {
-      this.data.texts = (typeof SAMPLE_TEXTS !== 'undefined') ? JSON.parse(JSON.stringify(SAMPLE_TEXTS)) : [];
-      this.data.texts.forEach(t => {
-        t.stepProgress = t.stepProgress || { '1': {}, '1.5': {}, '2': {}, '3': {}, '4': {}, '5': {}, '6': {}, 'drill': {} };
-        t.weakList = t.weakList || [];
-      });
-      if (this.data.texts.length > 0) {
-        this.data.currentTextId = this.data.texts[0].id;
-      }
-      this.saveData();
+    // 기본 예시 지문 (스티브 잡스, 헌법, 마틴 루터 킹 등 기본 샘플) 영구 제거
+    if (this.data && this.data.texts && this.data.texts.length > 0) {
+      this.data.texts = this.data.texts.filter(t => 
+        !t.id.startsWith('sample_') &&
+        !t.title.includes('스티브 잡스') &&
+        !t.title.includes('헌법 전문') &&
+        !t.title.includes('마틴 루터') &&
+        !t.title.includes('서시') &&
+        !t.title.includes('실전 발표')
+      );
+    } else {
+      this.data = { texts: [], currentTextId: null };
     }
 
-    if (!this.data.currentTextId && this.data.texts.length > 0) {
-      this.data.currentTextId = this.data.texts[0].id;
+    if (this.data.texts.length > 0) {
+      if (!this.data.currentTextId || !this.data.texts.find(t => t.id === this.data.currentTextId)) {
+        this.data.currentTextId = this.data.texts[0].id;
+      }
+    } else {
+      this.data.currentTextId = null;
     }
+    this.saveData();
   },
 
   saveData() {
@@ -579,11 +680,12 @@ const Store = {
   },
 
   getCurrentText() {
+    if (!this.data || !this.data.texts || this.data.texts.length === 0) return null;
     const t = this.data.texts.find(item => item.id === this.data.currentTextId) || this.data.texts[0];
     if (t && !t.stepProgress) {
       t.stepProgress = { '1': {}, '1.5': {}, '2': {}, '3': {}, '4': {}, '5': {}, '6': {}, 'drill': {} };
     }
-    return t;
+    return t || null;
   },
 
   setCurrentTextId(id) {
@@ -597,6 +699,19 @@ const Store = {
     this.data.texts.push(textObj);
     this.data.currentTextId = textObj.id;
     this.saveData();
+  },
+
+  updateText(id, updatedObj) {
+    const idx = this.data.texts.findIndex(t => t.id === id);
+    if (idx >= 0) {
+      this.data.texts[idx] = {
+        ...this.data.texts[idx],
+        ...updatedObj
+      };
+      this.saveData();
+      return this.data.texts[idx];
+    }
+    return null;
   },
 
   deleteText(id) {
@@ -618,12 +733,48 @@ const SpeechEngine = {
   isRecognizing: false,
 
   init() {
+    if (this.synth) {
+      if (this.synth.onvoiceschanged !== undefined) {
+        this.synth.onvoiceschanged = () => {
+          this.synth.getVoices();
+        };
+      }
+      this.synth.getVoices();
+    }
     const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (SpeechRec) {
       this.recognition = new SpeechRec();
       this.recognition.continuous = false;
       this.recognition.interimResults = true;
     }
+  },
+
+  getBestVoice(lang = 'ko-KR') {
+    if (!this.synth) return null;
+    const voices = this.synth.getVoices();
+    if (!voices || voices.length === 0) return null;
+
+    const langPrefix = lang.substring(0, 2).toLowerCase();
+    const candidateVoices = voices.filter(v => v.lang.toLowerCase().startsWith(langPrefix));
+    if (candidateVoices.length === 0) return null;
+
+    if (langPrefix === 'ko') {
+      // 한국어 고품질 자연스러운 음성 우선 탐색 (Google 한국의, Microsoft SunHi Natural 등)
+      const naturalVoice = candidateVoices.find(v => 
+        (v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Online')) && !v.name.includes('Desktop')
+      );
+      if (naturalVoice) return naturalVoice;
+
+      const nonDesktop = candidateVoices.find(v => !v.name.includes('Desktop'));
+      if (nonDesktop) return nonDesktop;
+    } else if (langPrefix === 'en') {
+      const naturalVoice = candidateVoices.find(v => 
+        (v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Online')) && !v.name.includes('Desktop')
+      );
+      if (naturalVoice) return naturalVoice;
+    }
+
+    return candidateVoices[0];
   },
 
   speak(text, lang = 'ko-KR', rate = 1.0, onEnd = null) {
@@ -633,10 +784,12 @@ const SpeechEngine = {
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = lang;
     utterance.rate = rate;
+    utterance.pitch = 1.0;
 
-    const voices = this.synth.getVoices();
-    const suitableVoice = voices.find(v => v.lang.startsWith(lang.substring(0, 2)));
-    if (suitableVoice) utterance.voice = suitableVoice;
+    const bestVoice = this.getBestVoice(lang);
+    if (bestVoice) {
+      utterance.voice = bestVoice;
+    }
 
     if (onEnd) utterance.onend = onEnd;
     this.synth.speak(utterance);
@@ -1042,6 +1195,21 @@ const App = {
       SoundFX.playSentenceMastered();
     });
 
+    // TXT 파일 불러오기 & 저장 이벤트
+    document.getElementById('btnExportTxt').addEventListener('click', () => this.exportTextAsTxt());
+    document.getElementById('btnImportTxt').addEventListener('click', () => document.getElementById('importTxtInput').click());
+    document.getElementById('btnExportTxtFromModal').addEventListener('click', () => this.exportTextAsTxt());
+    document.getElementById('btnImportTxtFromModal').addEventListener('click', () => document.getElementById('importTxtInput').click());
+    document.getElementById('importTxtInput').addEventListener('change', (e) => {
+      if (e.target.files && e.target.files[0]) {
+        this.importTextFromTxtFile(e.target.files[0]);
+      }
+      e.target.value = '';
+    });
+
+    // 지문 내용 수정 저장 버튼
+    document.getElementById('btnSaveEditedText').addEventListener('click', () => this.saveEditedText());
+
     document.getElementById('btnExportData').addEventListener('click', () => {
       const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(Store.data, null, 2));
       const downloadAnchor = document.createElement('a');
@@ -1079,18 +1247,127 @@ const App = {
 
   renderManageModalList() {
     const container = document.getElementById('manageTextList');
+    if (!Store.data.texts || Store.data.texts.length === 0) {
+      container.innerHTML = '<p class="empty-tip" style="padding:20px; text-align:center;">등록된 지문이 없습니다. 새 지문을 등록하거나 txt 파일을 불러와보세요!</p>';
+      return;
+    }
     container.innerHTML = Store.data.texts.map(text => `
       <div class="sentence-item" style="justify-content: space-between; align-items: center; margin-bottom: 8px;">
-        <div>
+        <div style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-right:8px;">
           <strong>${this.escapeHtml(text.title)}</strong>
           <span style="font-size: 0.8rem; color: var(--text-dim); margin-left: 8px;">(${text.sentences.length}문장 / ${text.category})</span>
         </div>
-        <div style="display:flex; gap: 6px;">
+        <div style="display:flex; gap: 6px; flex-shrink:0;">
           <button class="btn btn-secondary btn-sm" onclick="App.loadText('${text.id}'); document.getElementById('modalManageText').classList.add('hidden');">열기</button>
+          <button class="btn btn-secondary btn-sm" onclick="App.openEditTextModal('${text.id}')">✏️ 수정</button>
+          <button class="btn btn-secondary btn-sm" onclick="App.exportTextAsTxt('${text.id}')">💾 .txt</button>
           <button class="btn btn-text-danger btn-sm" onclick="App.deleteText('${text.id}')">삭제</button>
         </div>
       </div>
     `).join('');
+  },
+
+  openEditTextModal(textId) {
+    const text = Store.data.texts.find(t => t.id === textId);
+    if (!text) return;
+    document.getElementById('editTargetId').value = text.id;
+    document.getElementById('editTitle').value = text.title;
+    document.getElementById('editCategory').value = text.category || '';
+    document.getElementById('editLanguage').value = text.language || 'ko-KR';
+    document.getElementById('editContent').value = text.sentences.join('\n');
+    document.getElementById('modalManageText').classList.add('hidden');
+    document.getElementById('modalEditText').classList.remove('hidden');
+  },
+
+  saveEditedText() {
+    const id = document.getElementById('editTargetId').value;
+    const title = document.getElementById('editTitle').value.trim();
+    const category = document.getElementById('editCategory').value.trim() || '일반';
+    const language = document.getElementById('editLanguage').value;
+    const content = document.getElementById('editContent').value.trim();
+
+    if (!title || !content) {
+      alert('지문 제목과 본문 내용을 모두 입력해주세요!');
+      return;
+    }
+
+    const sentences = this.splitTextToSentences(content, 'smart');
+    if (sentences.length === 0) {
+      alert('분할된 유효 문장이 없습니다.');
+      return;
+    }
+
+    Store.updateText(id, {
+      title,
+      category,
+      language,
+      sentences
+    });
+
+    document.getElementById('modalEditText').classList.add('hidden');
+    this.renderTextSelectOptions();
+    this.loadText(id);
+    SoundFX.playWordCheck();
+    alert(`🎉 "${title}" 지문이 성공적으로 수정 및 저장되었습니다!`);
+  },
+
+  exportTextAsTxt(textId) {
+    const targetId = textId || Store.data.currentTextId;
+    const text = Store.data.texts.find(t => t.id === targetId);
+    if (!text) {
+      alert('저장할 지문이 없습니다.');
+      return;
+    }
+    const fullContent = text.sentences.join('\n\n');
+    const blob = new Blob([fullContent], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const safeTitle = text.title.replace(/[\\/:*?"<>|]/g, '_');
+    a.download = `${safeTitle}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    SoundFX.playWordCheck();
+  },
+
+  importTextFromTxtFile(file) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const content = e.target.result;
+      if (!content || !content.trim()) {
+        alert('선택한 텍스트 파일이 비어 있습니다.');
+        return;
+      }
+      const title = file.name.replace(/\.[^/.]+$/, '');
+      const sentences = this.splitTextToSentences(content, 'smart');
+      if (sentences.length === 0) {
+        alert('유효한 문장을 분할할 수 없습니다.');
+        return;
+      }
+      const isKorean = /[가-힣]/.test(content);
+      const language = isKorean ? 'ko-KR' : 'en-US';
+
+      const newText = {
+        id: 'user_' + Date.now(),
+        title,
+        category: '내 파일',
+        language,
+        description: `txt 파일에서 불러옴 (${sentences.length}개 문장)`,
+        sentences,
+        stepProgress: { '1': {}, '1.5': {}, '2': {}, '3': {}, '4': {}, '5': {}, '6': {}, 'drill': {} },
+        weakList: []
+      };
+
+      Store.addNewText(newText);
+      this.renderTextSelectOptions();
+      this.loadText(newText.id);
+      SoundFX.playSentenceMastered();
+      alert(`🎉 "${title}" 지문 (${sentences.length}개 문장)을 성공적으로 불러왔습니다!`);
+    };
+    reader.readAsText(file, 'utf-8');
   },
 
   deleteText(id) {
@@ -1100,6 +1377,8 @@ const App = {
       this.renderTextSelectOptions();
       if (Store.data.currentTextId) {
         this.loadText(Store.data.currentTextId);
+      } else {
+        this.renderCardContent();
       }
     }
   },
@@ -1125,6 +1404,10 @@ const App = {
 
   renderTextSelectOptions() {
     const select = document.getElementById('textSelect');
+    if (!Store.data.texts || Store.data.texts.length === 0) {
+      select.innerHTML = '<option value="">(등록된 지문 없음)</option>';
+      return;
+    }
     select.innerHTML = Store.data.texts.map(t => 
       `<option value="${t.id}" ${t.id === Store.data.currentTextId ? 'selected' : ''}>[${t.category}] ${t.title}</option>`
     ).join('');
@@ -1132,6 +1415,11 @@ const App = {
 
   loadText(textId) {
     this.stopTimer();
+    if (!textId) {
+      this.currentIndex = 0;
+      this.renderCardContent();
+      return;
+    }
     Store.setCurrentTextId(textId);
     this.currentIndex = 0;
     this.revealed = false;
@@ -1139,6 +1427,10 @@ const App = {
     this.updateComboUI();
 
     const curText = Store.getCurrentText();
+    if (!curText) {
+      this.renderCardContent();
+      return;
+    }
     curText.stepProgress = curText.stepProgress || { '1': {}, '1.5': {}, '2': {}, '3': {}, '4': {}, '5': {}, '6': {}, 'drill': {} };
     curText.weakList = curText.weakList || [];
 
@@ -1267,9 +1559,21 @@ const App = {
     SpeechEngine.stopSpeak();
     SpeechEngine.stopListen();
 
-    const item = this.getCurrentSentenceData();
     const curText = Store.getCurrentText();
+    if (!curText || !curText.sentences || curText.sentences.length === 0) {
+      document.getElementById('targetDisplayText').innerHTML = `
+        <div class="empty-state-card">
+          <h3>📝 등록된 암기 지문이 없습니다</h3>
+          <p>상단의 <strong>[➕ 새 지문 추가]</strong> 또는 <strong>[📂 txt 불러오기]</strong> 버튼을 눌러<br>외우고 싶은 장문이나 대본을 등록해 보세요!</p>
+        </div>
+      `;
+      document.getElementById('sentenceCounter').textContent = '0 / 0';
+      document.getElementById('stepSentenceStatus').textContent = '대기 중';
+      this.hideAllCardContainers();
+      return;
+    }
 
+    const item = this.getCurrentSentenceData();
     if (!item) {
       if (this.currentMode === 'drill') {
         document.getElementById('targetDisplayText').innerHTML = '🎉 등록된 취약 문장이 없습니다!<br><span style="font-size:0.9rem; color:var(--text-muted)">다른 단계에서 잘 모르겠습니다 버튼이나 별표(⭐)를 눌러 추가해보세요.</span>';
@@ -1483,11 +1787,7 @@ const App = {
 
             const allPassed = this.stage15State.passed.every(p => p === true);
             if (allPassed) {
-              SoundFX.playSentenceMastered();
-              VisualFX.spawnBurst(window.innerWidth / 2, window.innerHeight / 2, 50);
-              setTimeout(() => {
-                this.markCurrentAsMemorized(false);
-              }, 700);
+              this.markCurrentAsMemorized(true);
             }
           }
         }
@@ -1606,11 +1906,7 @@ const App = {
         } else {
           // 🎉 문장 내 모든 초성 단어 정복 완료!
           this.renderStage3ChosungGrid();
-          SoundFX.playSentenceMastered();
-          VisualFX.spawnBurst(window.innerWidth / 2, window.innerHeight / 2, 50);
-          setTimeout(() => {
-            this.markCurrentAsMemorized(false);
-          }, 600);
+          this.markCurrentAsMemorized(true);
           return;
         }
       }
@@ -1699,11 +1995,7 @@ const App = {
     });
 
     if (allCorrect) {
-      SoundFX.playSentenceMastered();
-      VisualFX.spawnBurst(window.innerWidth / 2, window.innerHeight / 2, 50);
-      setTimeout(() => {
-        this.markCurrentAsMemorized(false);
-      }, 600);
+      this.markCurrentAsMemorized(true);
     } else {
       SoundFX.playErrorThud();
       VisualFX.shake('error');
@@ -1809,9 +2101,7 @@ const App = {
     if (cleanInput.length >= cleanTarget.length && cleanInput === cleanTarget) {
       // 💥 타임어택 제한시간 내 완주 성공!
       this.stopTimer();
-      SoundFX.playSentenceMastered();
-      VisualFX.spawnBurst(window.innerWidth / 2, window.innerHeight / 2, 60);
-      this.markCurrentAsMemorized(false);
+      this.markCurrentAsMemorized(true);
     }
   },
 
@@ -1881,11 +2171,7 @@ const App = {
       if (selectedWords.length === targetWords.length) {
         // 💥 전체 문장 조립 완료!
         this.stopTimer();
-        SoundFX.playSentenceMastered();
-        VisualFX.spawnBurst(window.innerWidth / 2, window.innerHeight / 2, 50);
-        setTimeout(() => {
-          this.markCurrentAsMemorized(false);
-        }, 600);
+        this.markCurrentAsMemorized(true);
       }
     } else {
       // ❌ 순서 불일치
@@ -1933,6 +2219,9 @@ const App = {
     const simBar = document.getElementById('similarityBarFill');
     const feedbackBox = document.getElementById('voiceCoachFeedbackBox');
 
+    // 마이크 버튼을 누르면 AI가 말하고 있던 음성 코칭을 즉시 중단(cancel)
+    SpeechEngine.stopSpeak();
+
     if (SpeechEngine.isRecognizing) {
       SpeechEngine.stopListen();
       btnMic.classList.remove('recording');
@@ -1943,12 +2232,51 @@ const App = {
     btnMic.classList.add('recording');
     statusText.textContent = '듣고 있습니다... 말씀하세요!';
     feedbackBox.classList.add('hidden');
+    liveText.textContent = '말씀하시는 내용을 분석 중입니다...';
 
     SpeechEngine.startListen(
       lang,
       (transcript) => {
         liveText.textContent = `"${transcript}"`;
-        // 실시간 퍼지 유사도 계산 (한국어 조사/발음 오차 허용)
+
+        // 1. 실시간 단어 오답 감지 ("안녕하세요 저는 바나나" -> 바나나가 아닌 사과입니다! 즉시 피드백)
+        const mismatch = this.findVoiceMismatch(transcript, sentence);
+        if (mismatch) {
+          SpeechEngine.stopListen();
+          btnMic.classList.remove('recording');
+          statusText.textContent = '마이크 켜기 (재도전)';
+
+          SoundFX.playErrorThud();
+          VisualFX.shake('error');
+
+          const getParticle = (w) => {
+            if (!w) return '이';
+            const c = w.charCodeAt(w.length - 1);
+            if (c < 0xAC00 || c > 0xD7A3) return '이';
+            return (c - 0xAC00) % 28 > 0 ? '이' : '가';
+          };
+          const p = getParticle(mismatch.wrongWord);
+
+          const promptText = lang.startsWith('en')
+            ? `Not "${mismatch.wrongWord}", but "${mismatch.expectedWord}"! Let's try again!`
+            : `"${mismatch.wrongWord}"${p} 아닌 "${mismatch.expectedWord}"입니다! 다시 해볼까요?`;
+
+          const voicePrompt = lang.startsWith('en')
+            ? `Not ${mismatch.wrongWord}, but ${mismatch.expectedWord}! Let's try again!`
+            : `${mismatch.wrongWord}${p} 아닌 ${mismatch.expectedWord}입니다! 다시 해볼까요?`;
+
+          feedbackBox.classList.remove('hidden');
+          document.getElementById('voiceCoachFeedbackText').textContent = `🗣️ ${promptText}`;
+
+          SpeechEngine.speak(voicePrompt, lang, 1.0, () => {
+            setTimeout(() => {
+              liveText.textContent = '처음부터 다시 말씀해보세요!';
+            }, 500);
+          });
+          return;
+        }
+
+        // 2. 실시간 퍼지 유사도 계산 (한국어 조사/발음 오차 허용)
         const sim = this.calculateFuzzySimilarity(transcript, sentence);
         simRate.textContent = `${sim}%`;
         simBar.style.width = `${sim}%`;
@@ -1960,12 +2288,7 @@ const App = {
           statusText.textContent = '🎉 완벽히 일치합니다!';
           liveText.innerHTML = `🎉 <strong style="color:#34d399">합격!</strong> ("${this.escapeHtml(transcript)}")`;
           
-          SoundFX.playSentenceMastered();
-          VisualFX.spawnBurst(window.innerWidth / 2, window.innerHeight / 2, 60);
-
-          setTimeout(() => {
-            this.markCurrentAsMemorized(false);
-          }, 800);
+          this.markCurrentAsMemorized(true);
         }
       },
       () => {
@@ -1974,10 +2297,9 @@ const App = {
         statusText.textContent = '마이크 누르고 문장 외워서 말하기';
 
         const lastSpoken = liveText.textContent.replace(/^"|"$/g, '').trim();
-        if (lastSpoken && !lastSpoken.startsWith('마이크') && !lastSpoken.startsWith('처음부터')) {
+        if (lastSpoken && !lastSpoken.startsWith('마이크') && !lastSpoken.startsWith('처음부터') && !lastSpoken.startsWith('말씀하시는')) {
           const finalSim = this.calculateFuzzySimilarity(lastSpoken, sentence);
           if (finalSim < 75) {
-            // 🗣️ AI 코치 출동! "어떤 부분이 틀렸어요. 다시 해볼까요?"
             SoundFX.playErrorThud();
             VisualFX.shake('error');
             feedbackBox.classList.remove('hidden');
@@ -2003,6 +2325,89 @@ const App = {
         statusText.textContent = '마이크 누르고 문장 외워서 말하기';
       }
     );
+  },
+
+  // 실시간 음성 단어 단위 불일치(오답) 감지
+  findVoiceMismatch(spoken, target) {
+    if (!spoken || !target) return null;
+
+    const cleanPunct = (str) => str.replace(/['"`.,~!?]/g, '').trim();
+    const targetWords = cleanPunct(target).split(/\s+/).filter(Boolean);
+    const spokenWords = cleanPunct(spoken).split(/\s+/).filter(Boolean);
+
+    if (spokenWords.length === 0 || targetWords.length === 0) return null;
+
+    let sIdx = 0;
+    let tIdx = 0;
+
+    const areWordsSimilar = (w1, w2) => {
+      if (!w1 || !w2) return false;
+      const n1 = w1.toLowerCase().replace(/(은|는|이|가|을|를|의|에|로|과|와|도|만|고)$/g, '');
+      const n2 = w2.toLowerCase().replace(/(은|는|이|가|을|를|의|에|로|과|와|도|만|고)$/g, '');
+      if (n1 === n2) return true;
+      if (w1 === w2) return true;
+      if (this.calculateFuzzySimilarity(w1, w2) >= 60) return true;
+      return false;
+    };
+
+    while (sIdx < spokenWords.length && tIdx < targetWords.length) {
+      const sWord = spokenWords[sIdx];
+      const tWord = targetWords[tIdx];
+
+      // 1. 단어 일치 또는 발음/조사 오차 허용
+      if (areWordsSimilar(sWord, tWord)) {
+        sIdx++;
+        tIdx++;
+        continue;
+      }
+
+      // 2. 띄어쓰기 결합 검사 (spoken이 2단어로 쪼개졌을 때: target "먹고싶다" vs spoken "먹고", "싶다")
+      if (sIdx + 1 < spokenWords.length) {
+        const combinedSpoken = sWord + spokenWords[sIdx + 1];
+        if (areWordsSimilar(combinedSpoken, tWord)) {
+          sIdx += 2;
+          tIdx++;
+          continue;
+        }
+      }
+
+      // 3. 띄어쓰기 결합 역검사 (target이 2단어인데 spoken이 1단어로 붙었을 때)
+      if (tIdx + 1 < targetWords.length) {
+        const combinedTarget = tWord + targetWords[tIdx + 1];
+        if (areWordsSimilar(sWord, combinedTarget)) {
+          sIdx++;
+          tIdx += 2;
+          continue;
+        }
+      }
+
+      // 4. 마지막 단어 발음 중인 상태 검사 (사용자가 아직 말을 끝내지 않고 음절을 이어 말하는 중)
+      const isLastSpokenWord = (sIdx === spokenWords.length - 1);
+      if (isLastSpokenWord) {
+        if (tWord.startsWith(sWord) || sWord.startsWith(tWord)) {
+          return null; // 아직 말하는 중
+        }
+        if (sWord.length < 2 && tWord.length > sWord.length) {
+          return null;
+        }
+      }
+
+      // 5. 확정 오답 반환!
+      return {
+        wrongWord: sWord,
+        expectedWord: tWord
+      };
+    }
+
+    // 초과 발화 단어 검사
+    if (sIdx < spokenWords.length && tIdx >= targetWords.length) {
+      return {
+        wrongWord: spokenWords[sIdx],
+        expectedWord: targetWords[targetWords.length - 1]
+      };
+    }
+
+    return null;
   },
 
   // 퍼지 매칭 유사도 알고리즘 (조사/발음 오차 허용하여 75% 이상이면 합격)
@@ -2050,7 +2455,34 @@ const App = {
   },
 
   // --------------------------------------------------------------------------
-  // 공통 마스터 체크 & 다음 문장 전환 (중복 건너뛰기 락 적용)
+  // 끄투 스타일 텍스트 애니메이션 연출 ("투두두둑!" + "뜬! 뜬! 딴~!")
+  // --------------------------------------------------------------------------
+  triggerKkutuCelebration(sentence, onComplete) {
+    const textDisplayBox = document.getElementById('textDisplayBox');
+    const targetDisplayText = document.getElementById('targetDisplayText');
+
+    if (textDisplayBox && targetDisplayText) {
+      textDisplayBox.classList.remove('hidden');
+      textDisplayBox.classList.add('kkutu-celebrating');
+
+      // 단어별 끄투 팝 애니메이션 스팬 생성 (0.04s씩 순차 팝업)
+      const words = sentence.trim().split(/\s+/);
+      targetDisplayText.innerHTML = words.map((w, i) => 
+        `<span class="kkutu-word" style="animation-delay: ${i * 42}ms">${this.escapeHtml(w)}</span>`
+      ).join(' ');
+    }
+
+    // 끄투 사운드 ("투두두둑!" + "뜬! 뜬! 딴~!" 팡파레)
+    SoundFX.playKkutuSuccess(() => {
+      if (textDisplayBox) {
+        textDisplayBox.classList.remove('kkutu-celebrating');
+      }
+      if (onComplete) onComplete();
+    });
+  },
+
+  // --------------------------------------------------------------------------
+  // 공통 마스터 체크 & 다음 문장 전환 (끄투 연출 완료 후 부드럽게 전환)
   // --------------------------------------------------------------------------
   markCurrentAsMemorized(playSound = true) {
     if (this.isTransitioning) return; // 문장 중복 건너뛰기 방지
@@ -2078,60 +2510,66 @@ const App = {
     }
 
     Store.saveData();
-
-    if (playSound) {
-      SoundFX.playSentenceMastered();
-      VisualFX.spawnBurst(window.innerWidth / 2, window.innerHeight / 2, 30);
-    }
-
+    this.addCombo();
     this.updateMasteryUI();
     this.renderSentenceList();
 
-    const totalSentences = curText.sentences.length;
-    let stepAllCleared = false;
+    const proceedToNext = () => {
+      const totalSentences = curText.sentences.length;
+      let stepAllCleared = false;
 
-    const stepProg = curText.stepProgress[modeKey] || {};
-    const passedCount = Object.keys(stepProg).filter(k => stepProg[k]).length;
-    if (passedCount >= totalSentences) {
-      stepAllCleared = true;
-    }
-
-    if (stepAllCleared) {
-      SoundFX.playStageClear();
-      VisualFX.spawnBurst(window.innerWidth / 2, window.innerHeight / 2, 80);
-
-      const stageSequence = [1, '1.5', 2, 3, 4, 5, 6, 'drill'];
-      const curIdx = stageSequence.findIndex(s => String(s) === modeKey);
-
-      if (curIdx === stageSequence.length - 1) {
-        // 끝판왕 FINAL DRILL까지 전부 클리어!
-        this.showCongratulationModal();
-        this.isTransitioning = false;
-      } else {
-        const stageNames = {
-          '1': 'STAGE 1: 정독 & 뇌새김',
-          '1.5': 'STAGE 1.5: 슬라이더 가림막',
-          '2': 'STAGE 2: 키워드 강제인출',
-          '3': 'STAGE 3: 초성 단어 락커',
-          '4': 'STAGE 4: 스노우볼 30% 조립',
-          '5': 'STAGE 5: 타임어택 단어 나열',
-          '6': 'STAGE 6: 말로 외우기 AI 코치',
-          'drill': 'FINAL DRILL: 타임어택 백지 블라인드'
-        };
-        const nextMode = stageSequence[curIdx + 1];
-        document.getElementById('stageClearTitle').textContent = `🎉 ${stageNames[modeKey]} 정복 완료!`;
-        document.getElementById('stageClearMessage').innerHTML = `
-          모든 문장의 훈련을 완벽하게 마스터했습니다!<br>
-          이제 다음 단계인 <strong>${stageNames[String(nextMode)]}</strong> 단계로 진격합니다!
-        `;
-        document.getElementById('modalStageClear').classList.remove('hidden');
-        this.isTransitioning = false;
+      const stepProg = curText.stepProgress[modeKey] || {};
+      const passedCount = Object.keys(stepProg).filter(k => stepProg[k]).length;
+      if (passedCount >= totalSentences) {
+        stepAllCleared = true;
       }
-    } else {
-      setTimeout(() => {
+
+      if (stepAllCleared) {
+        SoundFX.playStageClear();
+        VisualFX.spawnBurst(window.innerWidth / 2, window.innerHeight / 2, 80);
+
+        const stageSequence = [1, '1.5', 2, 3, 4, 5, 6, 'drill'];
+        const curIdx = stageSequence.findIndex(s => String(s) === modeKey);
+
+        if (curIdx === stageSequence.length - 1) {
+          // 끝판왕 FINAL DRILL까지 전부 클리어!
+          this.showCongratulationModal();
+          this.isTransitioning = false;
+        } else {
+          const stageNames = {
+            '1': 'STAGE 1: 정독 & 뇌새김',
+            '1.5': 'STAGE 1.5: 슬라이더 가림막',
+            '2': 'STAGE 2: 키워드 강제인출',
+            '3': 'STAGE 3: 초성 단어 락커',
+            '4': 'STAGE 4: 스노우볼 30% 조립',
+            '5': 'STAGE 5: 타임어택 단어 나열',
+            '6': 'STAGE 6: 말로 외우기 AI 코치',
+            'drill': 'FINAL DRILL: 타임어택 백지 블라인드'
+          };
+          const nextMode = stageSequence[curIdx + 1];
+          document.getElementById('stageClearTitle').textContent = `🎉 ${stageNames[modeKey]} 정복 완료!`;
+          document.getElementById('stageClearMessage').innerHTML = `
+            모든 문장의 훈련을 완벽하게 마스터했습니다!<br>
+            이제 다음 단계인 <strong>${stageNames[String(nextMode)]}</strong> 단계로 진격합니다!
+          `;
+          document.getElementById('modalStageClear').classList.remove('hidden');
+          this.isTransitioning = false;
+        }
+      } else {
         this.nextSentence();
         this.isTransitioning = false;
-      }, 350);
+      }
+    };
+
+    if (playSound) {
+      // 끄투 스타일 투두두둑 + 뜬뜬딴 연출 후 재생 끝나면 넘어감
+      this.triggerKkutuCelebration(item.sentence, () => {
+        proceedToNext();
+      });
+    } else {
+      setTimeout(() => {
+        proceedToNext();
+      }, 300);
     }
   },
 

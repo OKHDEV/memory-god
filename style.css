@@ -2380,3 +2380,58 @@ label {
 .slider-line-item.passed .slider-status-tag {
   color: #34d399;
 }
+
+/* 끄투 스타일 단어 팝 & 글자 연출 */
+@keyframes kkutu-pop {
+  0% {
+    transform: scale(0.85) translateY(4px);
+    opacity: 0.3;
+    color: var(--text-main);
+  }
+  45% {
+    transform: scale(1.22) translateY(-4px);
+    opacity: 1;
+    color: #fbbf24;
+    text-shadow: 0 0 20px rgba(251, 191, 36, 0.9), 0 0 35px rgba(245, 158, 11, 0.6);
+  }
+  100% {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+    color: #34d399;
+    text-shadow: 0 0 15px rgba(52, 211, 153, 0.8);
+  }
+}
+
+.kkutu-word {
+  display: inline-block;
+  animation: kkutu-pop 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  margin: 0 3px;
+  will-change: transform, opacity;
+}
+
+.text-display-box.kkutu-celebrating {
+  border-color: rgba(251, 191, 36, 0.8) !important;
+  box-shadow: 0 0 32px rgba(251, 191, 36, 0.35), inset 0 0 20px rgba(251, 191, 36, 0.15) !important;
+  transition: all 0.2s ease;
+}
+
+/* 빈 지문 안내 카드 */
+.empty-state-card {
+  padding: 30px 20px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+}
+
+.empty-state-card h3 {
+  font-size: 1.3rem;
+  color: var(--accent-gold);
+}
+
+.empty-state-card p {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
