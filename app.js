@@ -532,6 +532,44 @@ const NLPAnalyzer = {
     'ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ','ㅅ','ㅆ','ㅇ','ㅈ','ㅉ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'
   ],
 
+  JUNGSUNG_LIST: [
+    'ㅏ','ㅐ','ㅑ','ㅒ','ㅓ','ㅔ','ㅕ','ㅖ','ㅗ','ㅘ','ㅙ','ㅚ','ㅛ','ㅜ','ㅝ','ㅞ','ㅟ','ㅠ','ㅡ','ㅢ','ㅣ'
+  ],
+
+  JONGSUNG_LIST: [
+    '','ㄱ','ㄲ','ㄳ','ㄴ','ㄵ','ㄶ','ㄷ','ㄹ','ㄺ','ㄻ','ㄼ','ㄽ','ㄾ','ㄿ','ㅀ','ㅁ','ㅂ','ㅄ','ㅅ','ㅆ','ㅇ','ㅈ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'
+  ],
+
+  // 한국어 음절을 초성/중성/종성 자모 문자열로 분해
+  // 예: "사과를 먹었습니다" -> "ㅅㅏㄱㅘㄹㅡㄹㅁㅓㄱㅇㅓㅆㅅㅡㅂㄴㅣㄷㅏ"
+  // 연음 및 발음 차이를 자모 단위로 정규화하여 STT 인식률 극대화
+  decomposeHangul(str) {
+    if (!str) return '';
+    let result = '';
+    for (let i = 0; i < str.length; i++) {
+      const code = str.charCodeAt(i);
+      if (code >= 0xAC00 && code <= 0xD7A3) {
+        const offset = code - 0xAC00;
+        const jong = offset % 28;
+        const jung = Math.floor((offset - jong) / 28) % 21;
+        const cho = Math.floor((offset - jong) / (28 * 21));
+
+        result += this.CHOSUNG_LIST[cho];
+        result += this.JUNGSUNG_LIST[jung];
+        if (jong > 0) {
+          result += this.JONGSUNG_LIST[jong];
+        }
+      } else {
+        const char = str[i].toLowerCase();
+        // 공백, 마침표, 물음표 등 특수문자 제외하고 영문/숫자 유지
+        if (/[a-z0-9]/.test(char)) {
+          result += char;
+        }
+      }
+    }
+    return result;
+  },
+
   // 단일 단어의 초성 추출 (예: "유구한" -> "ㅇㄱㅎ", "Hello" -> "H____")
   getWordChosung(word, lang = 'ko-KR') {
     if (lang.startsWith('en')) {
@@ -2061,7 +2099,7 @@ const App = {
 
     document.getElementById('btnProceedNextStage').addEventListener('click', () => {
       document.getElementById('modalStageClear').classList.add('hidden');
-      const stages = [1, '1.5', 2, 3, 4, 5, 6, 'drill'];
+      const stages = [1, '1.5', 2, 3, 4, 5, 'drill'];
       const curIdx = stages.findIndex(s => String(s) === String(this.currentMode));
       if (curIdx >= 0 && curIdx < stages.length - 1) {
         this.setMode(stages[curIdx + 1]);
@@ -2074,6 +2112,30 @@ const App = {
   },
 
   bindModalEvents() {
+    // 🎙️ 상단 헤더 '말로 외우기' 버튼
+    const btnOpenVoice = document.getElementById('btnOpenVoiceCoachModal');
+    if (btnOpenVoice) {
+      btnOpenVoice.addEventListener('click', () => {
+        this.openVoiceCoachModal();
+      });
+    }
+
+    // 모달 내부 컨트롤
+    const btnVcPrev = document.getElementById('btnVcPrev');
+    if (btnVcPrev) btnVcPrev.addEventListener('click', () => this.voiceCoachModalPrev());
+
+    const btnVcNext = document.getElementById('btnVcNext');
+    if (btnVcNext) btnVcNext.addEventListener('click', () => this.voiceCoachModalNext());
+
+    const btnVcToggleMask = document.getElementById('btnVcToggleMask');
+    if (btnVcToggleMask) btnVcToggleMask.addEventListener('click', () => this.toggleVoiceCoachModalMask());
+
+    const btnVcMicToggle = document.getElementById('btnVcMicToggle');
+    if (btnVcMicToggle) btnVcMicToggle.addEventListener('click', () => this.toggleVoiceCoachModalMic());
+
+    const btnVcMarkPassed = document.getElementById('btnVcMarkPassed');
+    if (btnVcMarkPassed) btnVcMarkPassed.addEventListener('click', () => this.markVoiceCoachPassed());
+
     document.getElementById('btnOpenAddModal').addEventListener('click', () => {
       document.getElementById('modalAddText').classList.remove('hidden');
       document.getElementById('inputTitle').value = '';
@@ -2090,7 +2152,16 @@ const App = {
     document.querySelectorAll('[data-close]').forEach(btn => {
       btn.addEventListener('click', () => {
         const modalId = btn.getAttribute('data-close');
-        document.getElementById(modalId).classList.add('hidden');
+        const modalEl = document.getElementById(modalId);
+        if (modalEl) modalEl.classList.add('hidden');
+
+        // 음성 코치 모달 닫힐 때 음성 및 마이크 즉시 정지
+        if (modalId === 'modalVoiceCoach') {
+          SpeechEngine.stopSpeak();
+          SpeechEngine.stopListen();
+          const micBtn = document.getElementById('btnVcMicToggle');
+          if (micBtn) micBtn.classList.remove('recording');
+        }
       });
     });
 
@@ -3314,13 +3385,13 @@ const App = {
           return;
         }
 
-        // 2. 실시간 퍼지 유사도 계산 (한국어 조사/발음 오차 허용)
+        // 2. 실시간 퍼지 유사도 계산 (한국어 자모 분해로 억양/발음/띄어쓰기 완벽 인식)
         const sim = this.calculateFuzzySimilarity(transcript, sentence);
         simRate.textContent = `${sim}%`;
         simBar.style.width = `${sim}%`;
 
-        // 75% 이상 일치 시 통과 인정!
-        if (sim >= 75) {
+        // 65% 이상 일치 시 시원하게 합격 인정!
+        if (sim >= 65) {
           SpeechEngine.stopListen();
           btnMic.classList.remove('recording');
           statusText.textContent = '🎉 완벽히 일치합니다!';
@@ -3337,7 +3408,7 @@ const App = {
         const lastSpoken = liveText.textContent.replace(/^"|"$/g, '').trim();
         if (lastSpoken && !lastSpoken.startsWith('마이크') && !lastSpoken.startsWith('처음부터') && !lastSpoken.startsWith('말씀하시는')) {
           const finalSim = this.calculateFuzzySimilarity(lastSpoken, sentence);
-          if (finalSim < 75) {
+          if (finalSim < 65) {
             SoundFX.playErrorThud();
             VisualFX.shake('error');
             feedbackBox.classList.remove('hidden');
@@ -3414,7 +3485,7 @@ const App = {
       const n2 = w2.toLowerCase().replace(/(은|는|이|가|을|를|의|에|로|과|와|도|만|고)$/g, '');
       if (n1 === n2) return true;
       if (w1 === w2) return true;
-      if (this.calculateFuzzySimilarity(w1, w2) >= 60) return true;
+      if (this.calculateFuzzySimilarity(w1, w2) >= 50) return true;
       return false;
     };
 
@@ -3422,7 +3493,7 @@ const App = {
       const sWord = spokenWords[sIdx];
       const tWord = targetWords[tIdx];
 
-      // 1. 단어 일치 또는 발음/조사 오차 허용
+      // 1. 단어 일치 또는 발음/자모 오차 허용
       if (areWordsSimilar(sWord, tWord)) {
         sIdx++;
         tIdx++;
@@ -3455,6 +3526,9 @@ const App = {
         if (tWord.startsWith(sWord) || sWord.startsWith(tWord)) {
           return null; // 아직 말하는 중
         }
+        if (this.calculateFuzzySimilarity(sWord, tWord) >= 40) {
+          return null; // 자모가 유사하므로 발화 진행 중
+        }
         if (sWord.length < 2 && tWord.length > sWord.length) {
           return null;
         }
@@ -3467,7 +3541,7 @@ const App = {
       };
     }
 
-    // 초과 발화 단어 검사
+    // 초과 발화 단어 검사 (원문 끝난 후 불필요한 단어가 더 붙었을 때)
     if (sIdx < spokenWords.length && tIdx >= targetWords.length) {
       return {
         wrongWord: spokenWords[sIdx],
@@ -3478,20 +3552,15 @@ const App = {
     return null;
   },
 
-  // 퍼지 매칭 유사도 알고리즘 (조사/발음 오차 허용하여 75% 이상이면 합격)
+  // 한글 자모 분해 기반 퍼지 매칭 알고리즘 (발음/연음/띄어쓰기 오차 완전 극복)
   calculateFuzzySimilarity(spoken, target) {
     if (!spoken || !target) return 0;
 
-    const normalize = (str) => {
-      return str.toLowerCase()
-        .replace(/['"`.,~!?\s]/g, '')
-        // 한국어 조사/어미 오차 허용 (마이크가 흘려듣는 경우 보정)
-        .replace(/(은|는|이|가|을|를|의|에|로|과|와|도|만|고)/g, '');
-    };
+    // 1. 한국어 자모 분해 (영문/숫자 소문자 유지, 공백/구두점 완전 정규화)
+    const s1 = NLPAnalyzer.decomposeHangul(spoken);
+    const s2 = NLPAnalyzer.decomposeHangul(target);
 
-    const s1 = normalize(spoken);
-    const s2 = normalize(target);
-
+    if (!s1 || !s2) return 0;
     if (s1 === s2) return 100;
     if (s2.includes(s1) || s1.includes(s2)) {
       const minL = Math.min(s1.length, s2.length);
@@ -3520,6 +3589,226 @@ const App = {
     if (maxLen === 0) return 100;
 
     return Math.max(0, Math.round((1 - (dist / maxLen)) * 100));
+  },
+
+  // --------------------------------------------------------------------------
+  // 상단 🎙️ 말로 외우기 AI 음성 코치 모달 전용 모듈
+  // --------------------------------------------------------------------------
+  voiceCoachModalState: {
+    isOpen: false,
+    currentIndex: 0,
+    isMasked: true
+  },
+
+  openVoiceCoachModal() {
+    const curText = this.getCurrentText();
+    if (!curText || !curText.sentences || curText.sentences.length === 0) {
+      alert('현재 선택된 지문에 문장이 없습니다.');
+      return;
+    }
+
+    this.voiceCoachModalState.isOpen = true;
+    this.voiceCoachModalState.currentIndex = this.currentIndex || 0;
+    this.voiceCoachModalState.isMasked = true;
+
+    document.getElementById('modalVoiceCoach').classList.remove('hidden');
+    this.updateVoiceCoachModalView();
+  },
+
+  updateVoiceCoachModalView() {
+    const curText = this.getCurrentText();
+    if (!curText || !curText.sentences) return;
+
+    const total = curText.sentences.length;
+    const idx = Math.max(0, Math.min(this.voiceCoachModalState.currentIndex, total - 1));
+    this.voiceCoachModalState.currentIndex = idx;
+
+    const sentence = curText.sentences[idx];
+    const targetEl = document.getElementById('vcTargetSentence');
+    const counterEl = document.getElementById('vcSentenceCounter');
+    const maskText = document.getElementById('vcMaskText');
+    const maskIcon = document.getElementById('vcMaskIcon');
+    const liveEl = document.getElementById('vcLiveTranscript');
+    const feedbackBox = document.getElementById('vcCoachFeedback');
+    const simBar = document.getElementById('vcSimBar');
+    const simVal = document.getElementById('vcSimPercent');
+    const micBtn = document.getElementById('btnVcMicToggle');
+    const micText = document.getElementById('vcMicStatusText');
+
+    counterEl.textContent = `문장 ${idx + 1} / ${total}`;
+    targetEl.textContent = sentence;
+
+    if (this.voiceCoachModalState.isMasked) {
+      targetEl.classList.add('masked');
+      maskText.textContent = '정답 보기';
+      maskIcon.textContent = '👁️';
+    } else {
+      targetEl.classList.remove('masked');
+      maskText.textContent = '가리기';
+      maskIcon.textContent = '🔒';
+    }
+
+    SpeechEngine.stopSpeak();
+    SpeechEngine.stopListen();
+    micBtn.classList.remove('recording');
+    micText.textContent = '마이크 켜고 외워서 말하기';
+    liveEl.textContent = '마이크 버튼을 누르고 문장을 말씀해 보세요...';
+    feedbackBox.classList.add('hidden');
+    simBar.style.width = '0%';
+    simVal.textContent = '0%';
+
+    document.getElementById('btnVcPrev').disabled = (idx === 0);
+    document.getElementById('btnVcNext').disabled = (idx === total - 1);
+  },
+
+  toggleVoiceCoachModalMask() {
+    this.voiceCoachModalState.isMasked = !this.voiceCoachModalState.isMasked;
+    const targetEl = document.getElementById('vcTargetSentence');
+    const maskText = document.getElementById('vcMaskText');
+    const maskIcon = document.getElementById('vcMaskIcon');
+    if (this.voiceCoachModalState.isMasked) {
+      targetEl.classList.add('masked');
+      maskText.textContent = '정답 보기';
+      maskIcon.textContent = '👁️';
+    } else {
+      targetEl.classList.remove('masked');
+      maskText.textContent = '가리기';
+      maskIcon.textContent = '🔒';
+    }
+  },
+
+  voiceCoachModalPrev() {
+    if (this.voiceCoachModalState.currentIndex > 0) {
+      this.voiceCoachModalState.currentIndex--;
+      this.updateVoiceCoachModalView();
+    }
+  },
+
+  voiceCoachModalNext() {
+    const curText = this.getCurrentText();
+    if (curText && this.voiceCoachModalState.currentIndex < curText.sentences.length - 1) {
+      this.voiceCoachModalState.currentIndex++;
+      this.updateVoiceCoachModalView();
+    }
+  },
+
+  toggleVoiceCoachModalMic() {
+    const curText = this.getCurrentText();
+    if (!curText) return;
+    const idx = this.voiceCoachModalState.currentIndex;
+    const sentence = curText.sentences[idx];
+    const lang = curText.language || 'ko-KR';
+
+    const micBtn = document.getElementById('btnVcMicToggle');
+    const micText = document.getElementById('vcMicStatusText');
+    const liveEl = document.getElementById('vcLiveTranscript');
+    const feedbackBox = document.getElementById('vcCoachFeedback');
+    const feedbackText = document.getElementById('vcCoachFeedbackText');
+    const simBar = document.getElementById('vcSimBar');
+    const simVal = document.getElementById('vcSimPercent');
+
+    SpeechEngine.stopSpeak();
+
+    if (SpeechEngine.isRecognizing) {
+      SpeechEngine.stopListen();
+      micBtn.classList.remove('recording');
+      micText.textContent = '마이크 켜기 (재도전)';
+      return;
+    }
+
+    micBtn.classList.add('recording');
+    micText.textContent = '듣고 있습니다... 말씀하세요!';
+    feedbackBox.classList.add('hidden');
+    liveEl.textContent = '말씀하시는 내용을 분석 중입니다...';
+
+    SpeechEngine.startListen(
+      lang,
+      (transcript) => {
+        liveEl.textContent = `"${transcript}"`;
+
+        // 1. 단어 오답 감지 ("바나나" -> "바나나가 아닌 사과라고 말해야 해요!")
+        const mismatch = this.findVoiceMismatch(transcript, sentence);
+        if (mismatch) {
+          SpeechEngine.stopListen();
+          micBtn.classList.remove('recording');
+          micText.textContent = '마이크 켜기 (재도전)';
+
+          SoundFX.playErrorThud();
+          VisualFX.shake('error');
+
+          const getParticle = (w) => {
+            if (!w) return '이';
+            const c = w.charCodeAt(w.length - 1);
+            if (c < 0xAC00 || c > 0xD7A3) return '이';
+            return (c - 0xAC00) % 28 > 0 ? '이' : '가';
+          };
+          const p = getParticle(mismatch.wrongWord);
+
+          const promptText = lang.startsWith('en')
+            ? `Not "${mismatch.wrongWord}", you should say "${mismatch.expectedWord}"!`
+            : `"${mismatch.wrongWord}"${p} 아닌 "${mismatch.expectedWord}"라고 말해야 해요!`;
+
+          const voicePrompt = lang.startsWith('en')
+            ? `Not ${mismatch.wrongWord}, you should say ${mismatch.expectedWord}!`
+            : `${mismatch.wrongWord}${p} 아닌 ${mismatch.expectedWord}라고 말해야 해요!`;
+
+          feedbackBox.classList.remove('hidden');
+          feedbackText.textContent = `🗣️ ${promptText}`;
+
+          SpeechEngine.speak(voicePrompt, lang, 1.0, () => {
+            setTimeout(() => {
+              liveEl.textContent = '처음부터 다시 말씀해보세요!';
+            }, 500);
+          });
+          return;
+        }
+
+        // 2. 실시간 자모 퍼지 유사도 계산
+        const sim = this.calculateFuzzySimilarity(transcript, sentence);
+        simVal.textContent = `${sim}%`;
+        simBar.style.width = `${sim}%`;
+
+        // 65% 이상 일치 시 시원하게 합격!
+        if (sim >= 65) {
+          SpeechEngine.stopListen();
+          micBtn.classList.remove('recording');
+          micText.textContent = '🎉 완벽히 일치합니다!';
+          liveEl.innerHTML = `🎉 <strong style="color:#34d399">합격!</strong> ("${this.escapeHtml(transcript)}")`;
+
+          SoundFX.playSuccessChime();
+          VisualFX.spawnBurst(window.innerWidth / 2, window.innerHeight / 2, 60);
+
+          setTimeout(() => {
+            if (this.voiceCoachModalState.currentIndex < curText.sentences.length - 1) {
+              this.voiceCoachModalNext();
+            } else {
+              alert('🎉 모든 문장의 말로 외우기를 완주하셨습니다!');
+            }
+          }, 1500);
+        }
+      },
+      () => {
+        micBtn.classList.remove('recording');
+        micText.textContent = '마이크 누르고 외워서 말하기';
+      },
+      () => {
+        micBtn.classList.remove('recording');
+        micText.textContent = '마이크 누르고 외워서 말하기';
+      }
+    );
+  },
+
+  markVoiceCoachPassed() {
+    const curText = this.getCurrentText();
+    if (!curText) return;
+    SoundFX.playSuccessChime();
+    VisualFX.spawnBurst(window.innerWidth / 2, window.innerHeight / 2, 50);
+
+    if (this.voiceCoachModalState.currentIndex < curText.sentences.length - 1) {
+      this.voiceCoachModalNext();
+    } else {
+      alert('🎉 축하합니다! 모든 문장의 말로 외우기를 마스터하셨습니다!');
+    }
   },
 
   // --------------------------------------------------------------------------
@@ -3596,7 +3885,7 @@ const App = {
         SoundFX.playStageClear();
         VisualFX.spawnBurst(window.innerWidth / 2, window.innerHeight / 2, 80);
 
-        const stageSequence = [1, '1.5', 2, 3, 4, 5, 6, 'drill'];
+        const stageSequence = [1, '1.5', 2, 3, 4, 5, 'drill'];
         const curIdx = stageSequence.findIndex(s => String(s) === modeKey);
 
         if (curIdx === stageSequence.length - 1) {

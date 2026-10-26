@@ -42,6 +42,9 @@
           <button id="btnToggleSidebar" class="btn btn-secondary btn-sm" title="문장 전체 목록 펼치기/접기">
             <span>📋</span> 문장 목록
           </button>
+          <button id="btnOpenVoiceCoachModal" class="btn btn-secondary btn-sm" title="말로 외우기 AI 음성 코칭">
+            <span>🎙️</span> 말로 외우기
+          </button>
           <input type="file" id="importTxtInput" accept=".txt" class="hidden">
         </div>
       </div>
@@ -116,11 +119,6 @@
         <span class="tab-step">STAGE 5</span>
         <span class="tab-title">🔥 타임어택 단어 나열</span>
         <span class="tab-desc">제한시간 내 순서 재배열</span>
-      </button>
-      <button class="nav-tab" data-mode="6">
-        <span class="tab-step">STAGE 6</span>
-        <span class="tab-title">🎙️ 말로 외우기 AI</span>
-        <span class="tab-desc">틀리면 음성 코칭 & 리셋</span>
       </button>
       <button class="nav-tab nav-tab-drill" data-mode="drill">
         <span class="tab-step">FINAL DRILL</span>
@@ -766,6 +764,74 @@
         </div>
         <div class="modal-footer">
           <button class="btn btn-secondary" data-close="modalManageText">닫기</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 모달: 말로 외우기 AI 음성 코치 전용 창 -->
+    <div id="modalVoiceCoach" class="modal-overlay hidden">
+      <div class="modal-box modal-voice-coach">
+        <div class="modal-header">
+          <div class="modal-header-title">
+            <span class="modal-icon">🎙️</span>
+            <h3>말로 외우기 AI 코치</h3>
+          </div>
+          <button class="btn-close" data-close="modalVoiceCoach">✕</button>
+        </div>
+        <div class="modal-body">
+          <!-- 상단 네비게이션: 문장 순서 이동 및 마스킹 토글 -->
+          <div class="vc-top-bar">
+            <div class="vc-nav-controls">
+              <button id="btnVcPrev" class="btn btn-secondary btn-sm">◀ 이전</button>
+              <span id="vcSentenceCounter" class="vc-counter-badge">문장 1 / 7</span>
+              <button id="btnVcNext" class="btn btn-secondary btn-sm">다음 ▶</button>
+            </div>
+            <div class="vc-view-toggle">
+              <button id="btnVcToggleMask" class="btn btn-outline btn-sm">
+                <span id="vcMaskIcon">👁️</span> <span id="vcMaskText">정답 보기</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 타겟 문장 카드 -->
+          <div class="vc-sentence-card">
+            <div class="vc-card-label">외워서 말할 문장:</div>
+            <div id="vcTargetSentence" class="vc-sentence-text">문장 로딩 중...</div>
+          </div>
+
+          <!-- 마이크 액션 버튼 & 상태 -->
+          <div class="vc-mic-action-area">
+            <button id="btnVcMicToggle" class="btn-vc-mic">
+              <span class="vc-mic-icon">🎙️</span>
+              <span id="vcMicStatusText">마이크 켜고 외워서 말하기</span>
+            </button>
+            <p class="vc-guide-tip">💡 한국어 자모 분해 AI 인식 엔진 적용: 자연스럽게 편하게 말씀하시면 찰떡같이 알아듣습니다!</p>
+          </div>
+
+          <!-- AI 음성 코치 실시간 피드백 창 -->
+          <div id="vcCoachFeedback" class="vc-coach-feedback hidden">
+            <span class="vc-coach-icon">🤖</span>
+            <span id="vcCoachFeedbackText">올바른 발화 피드백이 표시됩니다.</span>
+          </div>
+
+          <!-- 실시간 인식 자막창 & 유사도 바 -->
+          <div class="vc-transcript-panel">
+            <div class="vc-transcript-header">
+              <span class="vc-trans-title">🎙️ 실시간 인식 자막:</span>
+              <span class="vc-sim-val">일치도: <strong id="vcSimPercent">0%</strong></span>
+            </div>
+            <div id="vcLiveTranscript" class="vc-transcript-content">마이크 버튼을 누르고 문장을 말씀해 보세요...</div>
+            <div class="vc-progress-bg">
+              <div id="vcSimBar" class="vc-progress-fill" style="width: 0%"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer justify-between">
+          <button id="btnVcMarkPassed" class="btn btn-success">
+            <span>🎉</span> 완벽히 외웠음 (통과)
+          </button>
+          <button class="btn btn-secondary" data-close="modalVoiceCoach">닫기</button>
         </div>
       </div>
     </div>
