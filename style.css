@@ -343,6 +343,18 @@ body {
   transform: translateY(-2px);
 }
 
+.btn-warning {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.4);
+}
+
+.btn-warning:hover {
+  background: linear-gradient(135deg, #fbbf24, #ea580c);
+  box-shadow: 0 6px 20px rgba(245, 158, 11, 0.6);
+  transform: translateY(-2px);
+}
+
 .btn-outline {
   background: transparent;
   border: 1px dashed rgba(255, 255, 255, 0.2);
@@ -481,13 +493,22 @@ body {
 }
 
 /* ==========================================================================
-   메인 레이아웃 (학습 스테이지 + 사이드바)
+   메인 레이아웃 (기본값: 사이드바 접힘 -> 100% 와이드 카드 몰입)
    ========================================================================== */
 .main-layout {
   display: grid;
-  grid-template-columns: 1fr 340px;
+  grid-template-columns: 1fr;
   gap: 20px;
   flex: 1;
+  transition: all 0.3s ease;
+}
+
+.main-layout.sidebar-open {
+  grid-template-columns: 1fr 340px;
+}
+
+.sidebar-overview.collapsed {
+  display: none !important;
 }
 
 /* 학습 스테이지 섹션 */

@@ -33,6 +33,9 @@
           <button id="btnOpenManageModal" class="btn btn-secondary btn-sm" title="지문 관리/편집">
             <span>⚙️</span> 지문 관리
           </button>
+          <button id="btnToggleSidebar" class="btn btn-secondary btn-sm" title="문장 전체 목록 펼치기/접기">
+            <span>📋</span> 문장 목록
+          </button>
         </div>
       </div>
 
@@ -304,6 +307,9 @@
             </div>
 
             <div class="mastery-actions">
+              <button id="btnDontKnow" class="btn btn-warning btn-lg" title="취약 문장으로 등록하고 정답 확인 및 다음으로 이동">
+                <span>🤔</span> 잘 모르겠습니다
+              </button>
               <button id="btnMarkMemorized" class="btn btn-success btn-lg" title="외움 완료 및 다음으로 (Enter 키)">
                 <span>⚡</span> 완벽히 외웠음! (Enter)
               </button>
@@ -321,16 +327,21 @@
         </div>
       </section>
 
-      <!-- 우측: 전체 문장 파이프라인 & 마스터리 현황 사이드바 -->
-      <aside class="sidebar-overview">
+      <!-- 우측: 전체 문장 파이프라인 & 마스터리 현황 사이드바 (기본 접힘) -->
+      <aside id="sidebarOverview" class="sidebar-overview collapsed">
         <div class="sidebar-header">
           <div class="sidebar-title-group">
             <h2 class="sidebar-title">문장 전체 목록</h2>
             <span id="sidebarCountBadge" class="sidebar-count">0 / 0</span>
           </div>
-          <button id="btnResetProgress" class="btn btn-text-danger btn-xs" title="현재 지문 학습 상태 초기화">
-            초기화
-          </button>
+          <div style="display:flex; gap:6px; align-items:center;">
+            <button id="btnResetProgress" class="btn btn-text-danger btn-xs" title="현재 지문 학습 상태 초기화">
+              초기화
+            </button>
+            <button id="btnCloseSidebar" class="btn btn-secondary btn-xs" title="문장 목록 접기">
+              ✕
+            </button>
+          </div>
         </div>
 
         <div class="sidebar-filter-tabs">

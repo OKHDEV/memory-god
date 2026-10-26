@@ -776,9 +776,14 @@ const App = {
     document.getElementById('btnPrevSentence').addEventListener('click', () => this.prevSentence());
     document.getElementById('btnNextSentence').addEventListener('click', () => this.nextSentence());
     document.getElementById('btnMarkMemorized').addEventListener('click', () => this.markCurrentAsMemorized());
+    document.getElementById('btnDontKnow').addEventListener('click', () => this.markAsDontKnow());
     document.getElementById('btnToggleReveal').addEventListener('click', () => this.toggleReveal());
     document.getElementById('btnSpeakCurrent').addEventListener('click', () => this.speakCurrentSentence());
     document.getElementById('btnToggleWeakness').addEventListener('click', () => this.toggleCurrentWeakness());
+
+    // 사이드바 토글 버튼 (기본 접힘)
+    document.getElementById('btnToggleSidebar').addEventListener('click', () => this.toggleSidebar());
+    document.getElementById('btnCloseSidebar').addEventListener('click', () => this.toggleSidebar(false));
 
     document.getElementById('ttsRateSelect').addEventListener('change', (e) => {
       Store.settings.ttsRate = parseFloat(e.target.value);
@@ -1482,6 +1487,7 @@ const App = {
     });
   },
 
+  // STAGE 5: 글자 하나를 완성 후 다음 글자로 넘어갈 때 확정 검사하는 정밀 블라인드 타이핑
   handleBlindTypingInput(e) {
     const inputVal = e.target.value;
     const item = this.getCurrentSentenceData();
@@ -1492,11 +1498,27 @@ const App = {
     const errorBanner = document.getElementById('errorAlertBanner');
     const errorText = document.getElementById('errorAlertText');
 
-    let hasError = false;
-    let correctPrefix = '';
-    let errorChar = '';
+    if (!inputVal) {
+      this.updateBlindTypedView('');
+      errorBanner.classList.add('hidden');
+      return;
+    }
 
-    for (let i = 0; i < inputVal.length; i++) {
+    // 한글 조합(IME) 중 글자 분리 오인 방지:
+    // 사용자가 다음 글자로 넘어갔을 때(길이가 2 이상이거나 마지막 글자가 완성형)
+    // 이전의 완성된 글자들은 100% 확정된 상태이므로 그 글자들을 정확히 검사!
+    // e.inputType이 'insertText'이고 공백이거나, 전체 길이에 도달했을 때는 마지막 글자도 검사!
+    const isCompletedLength = inputVal.length >= target.length;
+    // 확정 완료된 글자 개수 (다음 글자로 넘어갔으므로 최소 inputVal.length - 1 개는 확정됨)
+    const confirmedCount = isCompletedLength ? inputVal.length : Math.max(0, inputVal.length - 1);
+
+    let hasError = false;
+    let wrongChar = '';
+    let expectedChar = '';
+    let correctPrefix = '';
+
+    // 1. 이미 완성되어 다음 글자로 넘어간 글자들에 대한 엄밀 검사
+    for (let i = 0; i < confirmedCount; i++) {
       const inCh = inputVal[i];
       const tgCh = target[i] || '';
 
@@ -1508,33 +1530,37 @@ const App = {
         correctPrefix += tgCh || inCh;
       } else {
         hasError = true;
-        errorChar = inCh;
+        wrongChar = inCh;
+        expectedChar = tgCh;
         break;
       }
     }
 
+    // 화면 블라인드 뷰: 올바르게 완성된 글자들만 표시
     this.updateBlindTypedView(correctPrefix);
 
     if (hasError) {
+      // 💥 완성되어 넘어간 글자가 틀렸을 때만 즉시 퍽! 소리와 함께 오답 경고!
       SoundFX.playErrorThud();
       VisualFX.shake('error');
       this.combo = 0;
       this.updateComboUI();
       errorBanner.classList.remove('hidden');
-      errorText.innerHTML = `💥 <strong>[오답 발생!]</strong> 입력한 '<strong>${this.escapeHtml(errorChar)}</strong>' 자리가 틀렸습니다. (지우고 다시 입력하세요)`;
+      errorText.innerHTML = `💥 <strong>[오답 발생!]</strong> 완성된 글자 '<strong>${this.escapeHtml(wrongChar)}</strong>' 자리가 틀렸습니다. (정답: '<strong>${this.escapeHtml(expectedChar)}</strong>')`;
     } else {
       errorBanner.classList.add('hidden');
-      this.addCombo();
-      SoundFX.playHit(this.combo);
-      VisualFX.spawnHit(window.innerWidth / 2, window.innerHeight / 2, 4);
+      if (confirmedCount > 0) {
+        this.addCombo();
+        SoundFX.playHit(this.combo);
+      }
     }
 
-    // 완성 검사
+    // 문장 전체 완성 검사
     const cleanInput = Store.settings.punctFlexible ? inputVal.replace(/[^\w가-힣]/g, '') : inputVal.trim();
     const cleanTarget = Store.settings.punctFlexible ? target.replace(/[^\w가-힣]/g, '') : target.trim();
 
     if (cleanInput.length >= cleanTarget.length && cleanInput === cleanTarget) {
-      // 💥 제한시간 내 완주 성공!
+      // 💥 타임어택 제한시간 내 완주 성공!
       this.stopTimer();
       SoundFX.playSentenceMastered();
       VisualFX.spawnBurst(window.innerWidth / 2, window.innerHeight / 2, 60);
@@ -1740,6 +1766,57 @@ const App = {
 
     Store.saveData();
     this.renderCardContent();
+  },
+
+  // "잘 모르겠습니다" 클릭 시: 취약 문장에 등록하고 정답을 보여준 뒤 다음 문장으로 이동
+  markAsDontKnow() {
+    this.stopTimer();
+    const item = this.getCurrentSentenceData();
+    if (!item) return;
+
+    const curText = Store.getCurrentText();
+    curText.weakList = curText.weakList || [];
+    if (!curText.weakList.includes(item.originalIndex)) {
+      curText.weakList.push(item.originalIndex);
+    }
+    Store.saveData();
+
+    SoundFX.playErrorThud();
+    VisualFX.shake('hit');
+
+    // 정답 원문 박스 열어주기
+    const box = document.getElementById('revealedOriginalText');
+    if (box) box.classList.remove('hidden');
+
+    // 별표 표시 활성화
+    document.getElementById('weaknessBadge').classList.remove('hidden');
+    document.getElementById('btnToggleWeakness').classList.add('starred');
+    document.getElementById('starIcon').textContent = '★';
+
+    this.renderSentenceList();
+
+    setTimeout(() => {
+      this.nextSentence();
+    }, 1200);
+  },
+
+  // 문장 전체 목록 사이드바 접기/펼치기 (기본값: 접힘)
+  toggleSidebar(forceState) {
+    const sidebar = document.getElementById('sidebarOverview');
+    const mainLayout = document.querySelector('.main-layout');
+    if (!sidebar || !mainLayout) return;
+
+    const isCollapsed = sidebar.classList.contains('collapsed');
+    const willOpen = forceState !== undefined ? forceState : isCollapsed;
+
+    if (willOpen) {
+      sidebar.classList.remove('collapsed');
+      mainLayout.classList.add('sidebar-open');
+    } else {
+      sidebar.classList.add('collapsed');
+      mainLayout.classList.remove('sidebar-open');
+    }
+    SoundFX.playHit(0);
   },
 
   prevSentence() {
