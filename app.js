@@ -652,11 +652,12 @@ const SpeechEngine = {
 // 6. 메인 애플리케이션 코어 컨트롤러 (App)
 // ============================================================================
 const App = {
-  currentMode: 1, // 1~5, 'drill'
+  currentMode: 1, // 1~6, 'drill'
   currentIndex: 0,
   revealed: false,
   combo: 0,
   sidebarFilter: 'all',
+  isTransitioning: false, // 문장 중복 건너뛰기 방지 락
 
   // STAGE 3: 초성 단어 락커 상태
   stage3State: {
@@ -674,6 +675,12 @@ const App = {
     targetWords: [],
     selectedWords: [],
     remainingWords: []
+  },
+
+  // STAGE 6: 말로 외우기 AI 음성 코치 상태
+  stage6VoiceState: {
+    isListening: false,
+    timerId: null
   },
 
   // 타임어택 공통 타이머 객체 (STAGE 5 & DRILL용)
@@ -834,7 +841,7 @@ const App = {
     document.getElementById('btnResetProgress').addEventListener('click', () => {
       if (confirm('현재 지문의 전체 스테이지 학습 진행도를 초기화하시겠습니까?')) {
         const curText = Store.getCurrentText();
-        curText.stepProgress = { 1: {}, 2: {}, 3: {}, 4: {}, 5: {} };
+        curText.stepProgress = { 1: {}, 2: {}, 3: {}, 4: {}, 5: {}, 6: {} };
         Store.saveData();
         this.updateMasteryUI();
         this.renderSentenceList();
@@ -860,14 +867,14 @@ const App = {
       } else if (e.code === 'ArrowRight') {
         e.preventDefault();
         this.nextSentence();
-      } else if (e.key >= '1' && e.key <= '5') {
+      } else if (e.key >= '1' && e.key <= '6') {
         this.setMode(parseInt(e.key, 10));
       }
     });
 
     document.getElementById('btnProceedNextStage').addEventListener('click', () => {
       document.getElementById('modalStageClear').classList.add('hidden');
-      if (typeof this.currentMode === 'number' && this.currentMode < 5) {
+      if (typeof this.currentMode === 'number' && this.currentMode < 6) {
         this.setMode(this.currentMode + 1);
         this.currentIndex = 0;
         this.renderCardContent();
@@ -1073,6 +1080,7 @@ const App = {
       3: 'STAGE 3: 초성 단어 락커',
       4: 'STAGE 4: 스노우볼 30% 조립',
       5: 'STAGE 5: 타임어택 백지 블라인드',
+      6: 'STAGE 6: 말로 외우기 AI 코치',
       'drill': '🔥 타임어택 단어 나열'
     };
     document.getElementById('currentModeBadge').textContent = badgeMap[mode] || '학습 모드';
@@ -1084,6 +1092,7 @@ const App = {
     if (mode === 3) document.getElementById('ctrlStep3').classList.remove('hidden');
     if (mode === 4) document.getElementById('ctrlStep4').classList.remove('hidden');
     if (mode === 5) document.getElementById('ctrlStep5').classList.remove('hidden');
+    if (mode === 6) document.getElementById('ctrlStep6').classList.remove('hidden');
 
     this.renderCardContent();
   },
@@ -1093,8 +1102,11 @@ const App = {
     if (!curText || !curText.sentences) return [];
     if (this.currentMode === 'drill') {
       const weakIndices = curText.weakList || [];
-      if (weakIndices.length === 0) return [];
-      return weakIndices.map(idx => ({ sentence: curText.sentences[idx], originalIndex: idx }));
+      // 취약 문장이 있으면 취약 문장을 훈련, 비어있으면 전체 문장으로 즉시 플레이!
+      if (weakIndices.length > 0) {
+        return weakIndices.map(idx => ({ sentence: curText.sentences[idx], originalIndex: idx }));
+      }
+      return curText.sentences.map((sentence, idx) => ({ sentence, originalIndex: idx }));
     }
     return curText.sentences.map((sentence, idx) => ({ sentence, originalIndex: idx }));
   },
@@ -1238,10 +1250,21 @@ const App = {
       this.setupStage5Blind(sentence);
     }
     // -------------------------------------------------------------
+    // STAGE 6: 말로 외우기 AI 음성 코치
+    // -------------------------------------------------------------
+    else if (this.currentMode === 6) {
+      document.getElementById('targetDisplayText').innerHTML = `<span style="color:var(--accent-cyan); font-weight:800;">🎙️ 마이크를 켜고 문장을 말하세요! 틀리면 AI 코치가 알려주고 리셋됩니다.</span>`;
+      document.getElementById('stage6VoiceCoachArea').classList.remove('hidden');
+      document.getElementById('revealArea').classList.remove('hidden');
+      this.setupStage6VoiceCoach(sentence, curText.language);
+    }
+    // -------------------------------------------------------------
     // DRILL: 타임어택 단어 나열
     // -------------------------------------------------------------
     else if (this.currentMode === 'drill') {
-      document.getElementById('targetDisplayText').innerHTML = `<span style="color:var(--accent-gold); font-weight:800;">⏱️ 타임어택 단어 나열! 제한시간 내에 올바른 순서대로 단어를 클릭하세요!</span>`;
+      const isCustomWeak = (curText.weakList || []).length > 0;
+      const drillLabel = isCustomWeak ? '🔥 취약 문장 타임어택 단어 나열' : '⏱️ 전체 문장 타임어택 단어 나열';
+      document.getElementById('targetDisplayText').innerHTML = `<span style="color:var(--accent-gold); font-weight:800;">${drillLabel}! 제한시간 내에 올바른 순서대로 단어를 클릭하세요!</span>`;
       document.getElementById('drillScrambleArea').classList.remove('hidden');
       this.setupDrillScramble(sentence);
     }
@@ -1252,6 +1275,7 @@ const App = {
   hideAllCardContainers() {
     document.getElementById('stage3ChosungArea').classList.add('hidden');
     document.getElementById('stage4SnowballArea').classList.add('hidden');
+    document.getElementById('stage6VoiceCoachArea').classList.add('hidden');
     document.getElementById('drillScrambleArea').classList.add('hidden');
     document.getElementById('typingArea').classList.add('hidden');
     document.getElementById('revealArea').classList.add('hidden');
@@ -1653,15 +1677,174 @@ const App = {
   },
 
   // --------------------------------------------------------------------------
-  // 공통 마스터 체크 & 다음 문장 전환
+  // STAGE 6: 말로 외우기 AI 음성 코치 모듈
+  // --------------------------------------------------------------------------
+  setupStage6VoiceCoach(sentence, lang) {
+    SpeechEngine.stopSpeak();
+    SpeechEngine.stopListen();
+
+    const statusText = document.getElementById('voiceCoachStatusText');
+    const liveText = document.getElementById('liveTranscriptText');
+    const simRate = document.getElementById('voiceSimilarityRate');
+    const simBar = document.getElementById('similarityBarFill');
+    const feedbackBox = document.getElementById('voiceCoachFeedbackBox');
+    const btnMic = document.getElementById('btnToggleVoiceCoachMic');
+
+    btnMic.classList.remove('recording');
+    statusText.textContent = '마이크 누르고 문장 외워서 말하기';
+    liveText.textContent = '마이크 버튼을 누르면 인식이 시작됩니다...';
+    simRate.textContent = '0%';
+    simBar.style.width = '0%';
+    feedbackBox.classList.add('hidden');
+
+    btnMic.onclick = () => {
+      this.toggleStage6Mic(sentence, lang);
+    };
+  },
+
+  toggleStage6Mic(sentence, lang) {
+    const btnMic = document.getElementById('btnToggleVoiceCoachMic');
+    const statusText = document.getElementById('voiceCoachStatusText');
+    const liveText = document.getElementById('liveTranscriptText');
+    const simRate = document.getElementById('voiceSimilarityRate');
+    const simBar = document.getElementById('similarityBarFill');
+    const feedbackBox = document.getElementById('voiceCoachFeedbackBox');
+
+    if (SpeechEngine.isRecognizing) {
+      SpeechEngine.stopListen();
+      btnMic.classList.remove('recording');
+      statusText.textContent = '마이크 켜기 (재도전)';
+      return;
+    }
+
+    btnMic.classList.add('recording');
+    statusText.textContent = '듣고 있습니다... 말씀하세요!';
+    feedbackBox.classList.add('hidden');
+
+    SpeechEngine.startListen(
+      lang,
+      (transcript) => {
+        liveText.textContent = `"${transcript}"`;
+        // 실시간 퍼지 유사도 계산 (한국어 조사/발음 오차 허용)
+        const sim = this.calculateFuzzySimilarity(transcript, sentence);
+        simRate.textContent = `${sim}%`;
+        simBar.style.width = `${sim}%`;
+
+        // 75% 이상 일치 시 통과 인정!
+        if (sim >= 75) {
+          SpeechEngine.stopListen();
+          btnMic.classList.remove('recording');
+          statusText.textContent = '🎉 완벽히 일치합니다!';
+          liveText.innerHTML = `🎉 <strong style="color:#34d399">합격!</strong> ("${this.escapeHtml(transcript)}")`;
+          
+          SoundFX.playSentenceMastered();
+          VisualFX.spawnBurst(window.innerWidth / 2, window.innerHeight / 2, 60);
+
+          setTimeout(() => {
+            this.markCurrentAsMemorized(false);
+          }, 800);
+        }
+      },
+      () => {
+        // 음성 입력이 끝났을 때(사용자가 말을 멈춤) 검사
+        btnMic.classList.remove('recording');
+        statusText.textContent = '마이크 누르고 문장 외워서 말하기';
+
+        const lastSpoken = liveText.textContent.replace(/^"|"$/g, '').trim();
+        if (lastSpoken && !lastSpoken.startsWith('마이크') && !lastSpoken.startsWith('처음부터')) {
+          const finalSim = this.calculateFuzzySimilarity(lastSpoken, sentence);
+          if (finalSim < 75) {
+            // 🗣️ AI 코치 출동! "어떤 부분이 틀렸어요. 다시 해볼까요?"
+            SoundFX.playErrorThud();
+            VisualFX.shake('error');
+            feedbackBox.classList.remove('hidden');
+            document.getElementById('voiceCoachFeedbackText').textContent = '🗣️ "어떤 부분이 틀렸어요. 다시 해볼까요?"';
+
+            const promptVoice = lang.startsWith('en')
+              ? "That wasn't quite right. Let's try again!"
+              : "어떤 부분이 틀렸어요. 다시 해볼까요?";
+
+            SpeechEngine.speak(promptVoice, lang, 1.0, () => {
+              setTimeout(() => {
+                feedbackBox.classList.add('hidden');
+                simRate.textContent = '0%';
+                simBar.style.width = '0%';
+                liveText.textContent = '처음부터 다시 말씀해보세요!';
+              }, 1200);
+            });
+          }
+        }
+      },
+      () => {
+        btnMic.classList.remove('recording');
+        statusText.textContent = '마이크 누르고 문장 외워서 말하기';
+      }
+    );
+  },
+
+  // 퍼지 매칭 유사도 알고리즘 (조사/발음 오차 허용하여 75% 이상이면 합격)
+  calculateFuzzySimilarity(spoken, target) {
+    if (!spoken || !target) return 0;
+
+    const normalize = (str) => {
+      return str.toLowerCase()
+        .replace(/['"`.,~!?\s]/g, '')
+        // 한국어 조사/어미 오차 허용 (마이크가 흘려듣는 경우 보정)
+        .replace(/(은|는|이|가|을|를|의|에|로|과|와|도|만|고)/g, '');
+    };
+
+    const s1 = normalize(spoken);
+    const s2 = normalize(target);
+
+    if (s1 === s2) return 100;
+    if (s2.includes(s1) || s1.includes(s2)) {
+      const minL = Math.min(s1.length, s2.length);
+      const maxL = Math.max(s1.length, s2.length);
+      return Math.round((minL / maxL) * 100);
+    }
+
+    const track = Array(s2.length + 1).fill(null).map(() =>
+      Array(s1.length + 1).fill(null));
+    for (let i = 0; i <= s1.length; i += 1) track[0][i] = i;
+    for (let j = 0; j <= s2.length; j += 1) track[j][0] = j;
+
+    for (let j = 1; j <= s2.length; j += 1) {
+      for (let i = 1; i <= s1.length; i += 1) {
+        const indicator = s1[i - 1] === s2[j - 1] ? 0 : 1;
+        track[j][i] = Math.min(
+          track[j][i - 1] + 1,
+          track[j - 1][i] + 1,
+          track[j - 1][i - 1] + indicator
+        );
+      }
+    }
+
+    const dist = track[s2.length][s1.length];
+    const maxLen = Math.max(s1.length, s2.length);
+    if (maxLen === 0) return 100;
+
+    return Math.max(0, Math.round((1 - (dist / maxLen)) * 100));
+  },
+
+  // --------------------------------------------------------------------------
+  // 공통 마스터 체크 & 다음 문장 전환 (중복 건너뛰기 락 적용)
   // --------------------------------------------------------------------------
   markCurrentAsMemorized(playSound = true) {
+    if (this.isTransitioning) return; // 문장 중복 건너뛰기 방지
+    this.isTransitioning = true;
+
     this.stopTimer();
+    SpeechEngine.stopSpeak();
+    SpeechEngine.stopListen();
+
     const item = this.getCurrentSentenceData();
-    if (!item) return;
+    if (!item) {
+      this.isTransitioning = false;
+      return;
+    }
 
     const curText = Store.getCurrentText();
-    curText.stepProgress = curText.stepProgress || { 1: {}, 2: {}, 3: {}, 4: {}, 5: {} };
+    curText.stepProgress = curText.stepProgress || { 1: {}, 2: {}, 3: {}, 4: {}, 5: {}, 6: {} };
 
     if (typeof this.currentMode === 'number') {
       curText.stepProgress[this.currentMode] = curText.stepProgress[this.currentMode] || {};
@@ -1697,15 +1880,17 @@ const App = {
       SoundFX.playStageClear();
       VisualFX.spawnBurst(window.innerWidth / 2, window.innerHeight / 2, 80);
 
-      if (this.currentMode === 5) {
+      if (this.currentMode === 6) {
         this.showCongratulationModal();
+        this.isTransitioning = false;
       } else {
         const stageNames = {
           1: 'STAGE 1: 정독 & 뇌새김',
           2: 'STAGE 2: 키워드 강제인출',
           3: 'STAGE 3: 초성 단어 락커',
           4: 'STAGE 4: 스노우볼 30% 조립',
-          5: 'STAGE 5: 타임어택 백지 블라인드'
+          5: 'STAGE 5: 타임어택 백지 블라인드',
+          6: 'STAGE 6: 말로 외우기 AI 코치'
         };
         const nextMode = this.currentMode + 1;
         document.getElementById('stageClearTitle').textContent = `🎉 ${stageNames[this.currentMode]} 정복 완료!`;
@@ -1714,10 +1899,12 @@ const App = {
           이제 다음 단계인 <strong>${stageNames[nextMode]}</strong> 단계로 진격합니다!
         `;
         document.getElementById('modalStageClear').classList.remove('hidden');
+        this.isTransitioning = false;
       }
     } else {
       setTimeout(() => {
         this.nextSentence();
+        this.isTransitioning = false;
       }, 350);
     }
   },
@@ -1863,7 +2050,8 @@ const App = {
     if (!curText || !curText.sentences || curText.sentences.length === 0) return;
 
     const total = curText.sentences.length;
-    const finalProg = (curText.stepProgress && curText.stepProgress[5]) || {};
+    // STAGE 6 최종 마스터 완료된 문장 기준 (또는 가장 높은 단계)
+    const finalProg = (curText.stepProgress && (curText.stepProgress[6] || curText.stepProgress[5])) || {};
     const mastered = Object.keys(finalProg).filter(k => finalProg[k]).length;
     const pct = Math.round((mastered / total) * 100);
 

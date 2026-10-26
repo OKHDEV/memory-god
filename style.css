@@ -407,11 +407,11 @@ body {
 }
 
 /* ==========================================================================
-   5단계 마스터리 네비게이션 탭 (아케이드 스테이지 스타일)
+   6단계 마스터리 네비게이션 탭 (아케이드 스테이지 스타일)
    ========================================================================== */
 .mastery-nav {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(7, 1fr);
   gap: 10px;
 }
 
@@ -1792,4 +1792,117 @@ label {
 .scramble-controls {
   display: flex;
   justify-content: flex-end;
+}
+
+/* STAGE 6: 말로 외우기 AI 음성 코치 */
+.stage6-voice-container {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  width: 100%;
+  align-items: center;
+}
+
+.voice-coach-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.btn-mic-lg {
+  padding: 16px 36px;
+  font-size: 1.15rem;
+  font-weight: 800;
+  border-radius: 999px;
+  box-shadow: 0 6px 24px rgba(244, 63, 94, 0.4);
+}
+
+.voice-coach-tip {
+  font-size: 0.85rem;
+  color: var(--accent-cyan);
+  text-align: center;
+}
+
+.voice-transcript-box {
+  width: 100%;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.transcript-label {
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: var(--text-muted);
+}
+
+.live-transcript {
+  font-size: calc(1.25rem * var(--font-scale));
+  font-weight: 700;
+  color: var(--accent-gold);
+  min-height: 40px;
+  line-height: 1.6;
+}
+
+.similarity-meter {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.meter-info {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.meter-info strong {
+  color: var(--accent-green);
+  font-size: 1rem;
+}
+
+.pass-threshold {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+}
+
+.meter-bar-bg {
+  width: 100%;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.meter-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #f59e0b, #10b981);
+  border-radius: 999px;
+  transition: width 0.2s ease;
+}
+
+.voice-coach-feedback {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.25), rgba(185, 28, 28, 0.35));
+  border: 1px solid rgba(239, 68, 68, 0.6);
+  border-radius: var(--radius-md);
+  padding: 12px 20px;
+  color: #fca5a5;
+  font-size: 1.05rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  animation: shake-tiny 0.25s ease-out;
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
+}
+
+.coach-icon {
+  font-size: 1.5rem;
 }

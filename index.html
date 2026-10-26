@@ -78,7 +78,7 @@
       </div>
     </header>
 
-    <!-- 5단계 고난도 뇌과학 마스터리 탭 바 -->
+    <!-- 6단계 고난도 뇌과학 마스터리 탭 바 -->
     <nav class="mastery-nav">
       <button class="nav-tab active" data-mode="1">
         <span class="tab-step">STAGE 1</span>
@@ -105,10 +105,15 @@
         <span class="tab-title">⚡ 타임어택 블라인드</span>
         <span class="tab-desc">제한시간 내 완주 못하면 리셋</span>
       </button>
+      <button class="nav-tab" data-mode="6">
+        <span class="tab-step">STAGE 6</span>
+        <span class="tab-title">🎙️ 말로 외우기 AI</span>
+        <span class="tab-desc">틀리면 음성 코칭 & 리셋</span>
+      </button>
       <button class="nav-tab nav-tab-drill" data-mode="drill">
         <span class="tab-step">DRILL</span>
         <span class="tab-title">🔥 타임어택 단어 나열</span>
-        <span class="tab-desc">제한시간 내 순서 재배열</span>
+        <span class="tab-desc">전체/취약 단어 순서 재배열</span>
       </button>
     </nav>
 
@@ -164,6 +169,11 @@
             <!-- 5단계: 타임어택 백지 블라인드 안내 -->
             <div id="ctrlStep5" class="sub-ctrl-panel hidden">
               <span class="preview-hint" style="color:var(--accent-rose)">⚡ 제한시간 내에 백지 상태에서 끝까지 입력하지 못하면 처음부터 다시 씁니다!</span>
+            </div>
+
+            <!-- 6단계: 말로 외우기 AI 음성 코치 안내 -->
+            <div id="ctrlStep6" class="sub-ctrl-panel hidden">
+              <span class="preview-hint" style="color:var(--accent-cyan)">🎙️ 마이크를 켜고 외운 문장을 자연스럽게 말해보세요! (유사 발음 75% 이상 합격 인정)</span>
             </div>
           </div>
         </div>
@@ -274,13 +284,38 @@
               </div>
             </div>
 
-            <!-- 음성 인식 구술 모드 UI -->
-            <div id="voiceArea" class="voice-container hidden">
-              <button id="btnStartVoiceRec" class="btn btn-mic">
-                <span class="mic-icon">🎙️</span>
-                <span id="voiceRecStatus">마이크 누르고 문장 외워서 말하기</span>
-              </button>
-              <p id="voiceResultPreview" class="voice-result">음성 인식을 대기하고 있습니다...</p>
+            <!-- STAGE 6: 말로 외우기 AI 음성 코치 UI -->
+            <div id="stage6VoiceCoachArea" class="stage6-voice-container hidden">
+              <div class="voice-coach-header">
+                <button id="btnToggleVoiceCoachMic" class="btn btn-mic btn-mic-lg">
+                  <span class="mic-icon">🎙️</span>
+                  <span id="voiceCoachStatusText">마이크 누르고 문장 외워서 말하기</span>
+                </button>
+                <div class="voice-coach-tip">
+                  🗣️ AI 코치가 실시간으로 음성을 듣고, 틀리면 음성으로 피드백을 주며 처음부터 다시 연습합니다!
+                </div>
+              </div>
+
+              <!-- 실시간 음성 인식 자막창 & 유사도 게이지 -->
+              <div class="voice-transcript-box">
+                <div class="transcript-label">🎙️ 실시간 인식 자막:</div>
+                <p id="liveTranscriptText" class="live-transcript">마이크 버튼을 누르면 음성 인식이 시작됩니다...</p>
+                <div class="similarity-meter">
+                  <div class="meter-info">
+                    <span>일치 유사도: <strong id="voiceSimilarityRate">0%</strong></span>
+                    <span class="pass-threshold">(75% 이상 합격 인정)</span>
+                  </div>
+                  <div class="meter-bar-bg">
+                    <div id="similarityBarFill" class="meter-bar-fill" style="width: 0%"></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- AI 음성 코치 알림창 -->
+              <div id="voiceCoachFeedbackBox" class="voice-coach-feedback hidden">
+                <span class="coach-icon">🤖</span>
+                <span id="voiceCoachFeedbackText">"어떤 부분이 틀렸어요. 다시 해볼까요?"</span>
+              </div>
             </div>
 
             <!-- 정답 확인 토글 영역 (2, 3, 4단계 및 5단계 긴급 힌트용) -->
