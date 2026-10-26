@@ -556,7 +556,7 @@ const Store = {
     if (!this.data.texts || this.data.texts.length === 0) {
       this.data.texts = (typeof SAMPLE_TEXTS !== 'undefined') ? JSON.parse(JSON.stringify(SAMPLE_TEXTS)) : [];
       this.data.texts.forEach(t => {
-        t.stepProgress = t.stepProgress || { 1: {}, 2: {}, 3: {}, 4: {}, 5: {} };
+        t.stepProgress = t.stepProgress || { '1': {}, '1.5': {}, '2': {}, '3': {}, '4': {}, '5': {}, '6': {}, 'drill': {} };
         t.weakList = t.weakList || [];
       });
       if (this.data.texts.length > 0) {
@@ -581,7 +581,7 @@ const Store = {
   getCurrentText() {
     const t = this.data.texts.find(item => item.id === this.data.currentTextId) || this.data.texts[0];
     if (t && !t.stepProgress) {
-      t.stepProgress = { 1: {}, 2: {}, 3: {}, 4: {}, 5: {} };
+      t.stepProgress = { '1': {}, '1.5': {}, '2': {}, '3': {}, '4': {}, '5': {}, '6': {}, 'drill': {} };
     }
     return t;
   },
@@ -592,7 +592,7 @@ const Store = {
   },
 
   addNewText(textObj) {
-    textObj.stepProgress = { 1: {}, 2: {}, 3: {}, 4: {}, 5: {} };
+    textObj.stepProgress = { '1': {}, '1.5': {}, '2': {}, '3': {}, '4': {}, '5': {}, '6': {}, 'drill': {} };
     textObj.weakList = [];
     this.data.texts.push(textObj);
     this.data.currentTextId = textObj.id;
@@ -644,6 +644,81 @@ const SpeechEngine = {
 
   stopSpeak() {
     if (this.synth) this.synth.cancel();
+  },
+
+  async startListen(lang, onResult, onEnd, onError) {
+    const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRec) {
+      alert('이 브라우저는 음성 인식(STT)을 지원하지 않습니다. Chrome 또는 Edge 브라우저를 이용해 주세요.');
+      if (onError) onError(new Error('Speech recognition not supported'));
+      return;
+    }
+
+    // 마이크 접근 권한 확인 (사용 후 트랙 즉시 해제하여 SpeechRecognition 독점 보장)
+    try {
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        stream.getTracks().forEach(t => t.stop());
+      }
+    } catch (permErr) {
+      console.warn('Microphone permission check error:', permErr);
+    }
+
+    try {
+      if (this.recognition) {
+        try { this.recognition.abort(); } catch (e) {}
+      }
+      this.recognition = new SpeechRec();
+      this.recognition.lang = lang || 'ko-KR';
+      this.recognition.continuous = true;
+      this.recognition.interimResults = true;
+      this.recognition.maxAlternatives = 1;
+      this.isRecognizing = true;
+
+      this.recognition.onstart = () => {
+        this.isRecognizing = true;
+      };
+
+      this.recognition.onresult = (event) => {
+        let fullTranscript = '';
+        for (let i = 0; i < event.results.length; ++i) {
+          fullTranscript += event.results[i][0].transcript;
+        }
+        if (onResult) onResult(fullTranscript.trim());
+      };
+
+      this.recognition.onerror = (e) => {
+        if (e.error === 'no-speech') {
+          return; // 침묵 상태는 대기 지속
+        }
+        console.warn('SpeechRecognition error:', e.error);
+        if (e.error === 'not-allowed') {
+          alert('마이크 접근이 차단되어 있습니다. 브라우저 주소창 왼쪽의 자물쇠/마이크 설정을 허용으로 변경해 주세요!');
+        }
+        this.isRecognizing = false;
+        if (onError) onError(e);
+      };
+
+      this.recognition.onend = () => {
+        this.isRecognizing = false;
+        if (onEnd) onEnd();
+      };
+
+      this.recognition.start();
+    } catch (err) {
+      this.isRecognizing = false;
+      console.error('Recognition start failed:', err);
+      if (onError) onError(err);
+    }
+  },
+
+  stopListen() {
+    if (this.recognition) {
+      try {
+        this.recognition.abort();
+      } catch (e) {}
+      this.isRecognizing = false;
+    }
   }
 };
 
@@ -658,6 +733,12 @@ const App = {
   combo: 0,
   sidebarFilter: 'all',
   isTransitioning: false, // 문장 중복 건너뛰기 방지 락
+
+  // STAGE 1.5: 슬라이더 가림막 상태
+  stage15State: {
+    lines: [],
+    passed: []
+  },
 
   // STAGE 3: 초성 단어 락커 상태
   stage3State: {
@@ -775,7 +856,7 @@ const App = {
     document.querySelectorAll('.nav-tab').forEach(tab => {
       tab.addEventListener('click', () => {
         const mode = tab.dataset.mode;
-        this.setMode(mode === 'drill' ? 'drill' : parseInt(mode, 10));
+        this.setMode(mode === 'drill' ? 'drill' : (mode === '1.5' ? '1.5' : parseInt(mode, 10)));
       });
     });
 
@@ -841,7 +922,7 @@ const App = {
     document.getElementById('btnResetProgress').addEventListener('click', () => {
       if (confirm('현재 지문의 전체 스테이지 학습 진행도를 초기화하시겠습니까?')) {
         const curText = Store.getCurrentText();
-        curText.stepProgress = { 1: {}, 2: {}, 3: {}, 4: {}, 5: {}, 6: {} };
+        curText.stepProgress = { '1': {}, '1.5': {}, '2': {}, '3': {}, '4': {}, '5': {}, '6': {}, 'drill': {} };
         Store.saveData();
         this.updateMasteryUI();
         this.renderSentenceList();
@@ -874,8 +955,10 @@ const App = {
 
     document.getElementById('btnProceedNextStage').addEventListener('click', () => {
       document.getElementById('modalStageClear').classList.add('hidden');
-      if (typeof this.currentMode === 'number' && this.currentMode < 6) {
-        this.setMode(this.currentMode + 1);
+      const stages = [1, '1.5', 2, 3, 4, 5, 6, 'drill'];
+      const curIdx = stages.findIndex(s => String(s) === String(this.currentMode));
+      if (curIdx >= 0 && curIdx < stages.length - 1) {
+        this.setMode(stages[curIdx + 1]);
         this.currentIndex = 0;
         this.renderCardContent();
       }
@@ -948,7 +1031,7 @@ const App = {
         language,
         description: `사용자 등록 지문 (${sentences.length}개 문장)`,
         sentences,
-        stepProgress: { 1: {}, 2: {}, 3: {}, 4: {}, 5: {} },
+        stepProgress: { '1': {}, '1.5': {}, '2': {}, '3': {}, '4': {}, '5': {}, '6': {}, 'drill': {} },
         weakList: []
       };
 
@@ -1056,7 +1139,7 @@ const App = {
     this.updateComboUI();
 
     const curText = Store.getCurrentText();
-    curText.stepProgress = curText.stepProgress || { 1: {}, 2: {}, 3: {}, 4: {}, 5: {} };
+    curText.stepProgress = curText.stepProgress || { '1': {}, '1.5': {}, '2': {}, '3': {}, '4': {}, '5': {}, '6': {}, 'drill': {} };
     curText.weakList = curText.weakList || [];
 
     document.getElementById('textSelect').value = curText.id;
@@ -1067,32 +1150,38 @@ const App = {
 
   setMode(mode) {
     this.stopTimer();
+    SpeechEngine.stopSpeak();
+    SpeechEngine.stopListen();
     this.currentMode = mode;
     this.revealed = false;
 
     document.querySelectorAll('.nav-tab').forEach(tab => {
-      tab.classList.toggle('active', tab.dataset.mode === String(mode));
+      tab.classList.toggle('active', String(tab.dataset.mode) === String(mode));
     });
 
     const badgeMap = {
-      1: 'STAGE 1: 정독 & 뇌새김',
-      2: 'STAGE 2: 키워드 강제인출',
-      3: 'STAGE 3: 초성 단어 락커',
-      4: 'STAGE 4: 스노우볼 30% 조립',
-      5: 'STAGE 5: 타임어택 백지 블라인드',
-      6: 'STAGE 6: 말로 외우기 AI 코치',
-      'drill': '🔥 타임어택 단어 나열'
+      '1': 'STAGE 1: 정독 & 뇌새김',
+      '1.5': 'STAGE 1.5: 슬라이더 가림막',
+      '2': 'STAGE 2: 키워드 강제인출',
+      '3': 'STAGE 3: 초성 단어 락커',
+      '4': 'STAGE 4: 스노우볼 30% 조립',
+      '5': 'STAGE 5: 타임어택 단어 나열',
+      '6': 'STAGE 6: 말로 외우기 AI 코치',
+      'drill': '⚡ FINAL DRILL: 타임어택 백지 블라인드'
     };
-    document.getElementById('currentModeBadge').textContent = badgeMap[mode] || '학습 모드';
+    document.getElementById('currentModeBadge').textContent = badgeMap[String(mode)] || '학습 모드';
 
-    // 서브 컨트롤
+    // 서브 컨트롤 패널
     document.querySelectorAll('.sub-ctrl-panel').forEach(p => p.classList.add('hidden'));
-    if (mode === 1) document.getElementById('ctrlStep1').classList.remove('hidden');
-    if (mode === 2) document.getElementById('ctrlStep2').classList.remove('hidden');
-    if (mode === 3) document.getElementById('ctrlStep3').classList.remove('hidden');
-    if (mode === 4) document.getElementById('ctrlStep4').classList.remove('hidden');
-    if (mode === 5) document.getElementById('ctrlStep5').classList.remove('hidden');
-    if (mode === 6) document.getElementById('ctrlStep6').classList.remove('hidden');
+    const strMode = String(mode);
+    if (strMode === '1') document.getElementById('ctrlStep1').classList.remove('hidden');
+    else if (strMode === '1.5') document.getElementById('ctrlStep15').classList.remove('hidden');
+    else if (strMode === '2') document.getElementById('ctrlStep2').classList.remove('hidden');
+    else if (strMode === '3') document.getElementById('ctrlStep3').classList.remove('hidden');
+    else if (strMode === '4') document.getElementById('ctrlStep4').classList.remove('hidden');
+    else if (strMode === '5') document.getElementById('ctrlStep5').classList.remove('hidden');
+    else if (strMode === '6') document.getElementById('ctrlStep6').classList.remove('hidden');
+    else if (strMode === 'drill') document.getElementById('ctrlDrill').classList.remove('hidden');
 
     this.renderCardContent();
   },
@@ -1175,12 +1264,15 @@ const App = {
   // --------------------------------------------------------------------------
   renderCardContent() {
     this.stopTimer();
+    SpeechEngine.stopSpeak();
+    SpeechEngine.stopListen();
+
     const item = this.getCurrentSentenceData();
     const curText = Store.getCurrentText();
 
     if (!item) {
       if (this.currentMode === 'drill') {
-        document.getElementById('targetDisplayText').innerHTML = '🎉 등록된 취약 문장이 없습니다!<br><span style="font-size:0.9rem; color:var(--text-muted)">다른 단계에서 별표(⭐)를 눌러 취약 문장을 추가해보세요.</span>';
+        document.getElementById('targetDisplayText').innerHTML = '🎉 등록된 취약 문장이 없습니다!<br><span style="font-size:0.9rem; color:var(--text-muted)">다른 단계에서 잘 모르겠습니다 버튼이나 별표(⭐)를 눌러 추가해보세요.</span>';
         document.getElementById('sentenceCounter').textContent = '0 / 0';
         document.getElementById('stepSentenceStatus').textContent = '완벽 클리어!';
         this.hideAllCardContainers();
@@ -1193,13 +1285,10 @@ const App = {
     const totalCount = this.getActiveSentences().length;
     document.getElementById('sentenceCounter').textContent = `문장 ${this.currentIndex + 1} / ${totalCount}`;
 
-    if (typeof this.currentMode === 'number') {
-      const stepProg = (curText.stepProgress && curText.stepProgress[this.currentMode]) || {};
-      const passedCount = Object.keys(stepProg).filter(k => stepProg[k]).length;
-      document.getElementById('stepSentenceStatus').textContent = `이 스텝 통과: ${passedCount} / ${curText.sentences.length}`;
-    } else {
-      document.getElementById('stepSentenceStatus').textContent = `취약 문장 훈련 중`;
-    }
+    const modeKey = String(this.currentMode);
+    const stepProg = (curText.stepProgress && curText.stepProgress[modeKey]) || {};
+    const passedCount = Object.keys(stepProg).filter(k => stepProg[k]).length;
+    document.getElementById('stepSentenceStatus').textContent = `이 스텝 통과: ${passedCount} / ${curText.sentences.length}`;
 
     const isWeak = (curText.weakList || []).includes(originalIndex);
     document.getElementById('weaknessBadge').classList.toggle('hidden', !isWeak);
@@ -1213,20 +1302,29 @@ const App = {
     // -------------------------------------------------------------
     // STAGE 1: 정독 & 뇌새김
     // -------------------------------------------------------------
-    if (this.currentMode === 1) {
+    if (modeKey === '1') {
       document.getElementById('targetDisplayText').innerHTML = this.escapeHtml(sentence);
+    }
+    // -------------------------------------------------------------
+    // STAGE 1.5: 슬라이더 가림막 (오른쪽으로 밀어 읽기)
+    // -------------------------------------------------------------
+    else if (modeKey === '1.5') {
+      document.getElementById('targetDisplayText').innerHTML = `<span style="font-size:1.15rem; color:var(--accent-gold); font-weight:700;">🎚️ 슬라이더를 잡고 오른쪽으로 쭈우욱 밀어서 문장을 소리 내어 읽으세요!</span>`;
+      document.getElementById('stage15SliderArea').classList.remove('hidden');
+      document.getElementById('revealArea').classList.remove('hidden');
+      this.setupStage15Slider(sentence);
     }
     // -------------------------------------------------------------
     // STAGE 2: 키워드 강제인출
     // -------------------------------------------------------------
-    else if (this.currentMode === 2) {
+    else if (modeKey === '2') {
       document.getElementById('revealArea').classList.remove('hidden');
       document.getElementById('targetDisplayText').innerHTML = NLPAnalyzer.generateKeywordCloze(sentence, Store.settings.clozeLevel, curText.language);
     }
     // -------------------------------------------------------------
     // STAGE 3: 초성 단어 락커 (단어별 초성 칩 맞추기)
     // -------------------------------------------------------------
-    else if (this.currentMode === 3) {
+    else if (modeKey === '3') {
       document.getElementById('targetDisplayText').innerHTML = `<span style="font-size:1.15rem; color:var(--text-muted)">💡 초성 칩을 클릭하고 원래 단어를 입력하여 [✅]를 띄우세요!</span>`;
       document.getElementById('stage3ChosungArea').classList.remove('hidden');
       document.getElementById('revealArea').classList.remove('hidden');
@@ -1235,44 +1333,45 @@ const App = {
     // -------------------------------------------------------------
     // STAGE 4: 스노우볼 30% 징검다리 조립
     // -------------------------------------------------------------
-    else if (this.currentMode === 4) {
+    else if (modeKey === '4') {
       document.getElementById('targetDisplayText').innerHTML = `<span style="font-size:1.15rem; color:var(--text-muted)">🔗 30% 힌트를 징검다리 삼아 빈칸을 직접 타이핑하여 완성하세요!</span>`;
       document.getElementById('stage4SnowballArea').classList.remove('hidden');
       document.getElementById('revealArea').classList.remove('hidden');
       this.setupStage4Snowball(sentence);
     }
     // -------------------------------------------------------------
-    // STAGE 5: 타임어택 백지 블라인드
+    // STAGE 5: 🔥 타임어택 단어 나열 (Scramble) - 바뀜!
     // -------------------------------------------------------------
-    else if (this.currentMode === 5) {
-      document.getElementById('targetDisplayText').innerHTML = `<span style="color:var(--accent-rose); font-weight:800;">⚡ 타임어택! 제한시간 내에 입력하지 못하면 처음부터 다시 작성합니다!</span>`;
-      document.getElementById('typingArea').classList.remove('hidden');
-      this.setupStage5Blind(sentence);
+    else if (modeKey === '5') {
+      document.getElementById('targetDisplayText').innerHTML = `<span style="color:var(--accent-gold); font-weight:800;">🔥 STAGE 5: 타임어택 단어 나열! 제한시간 내에 올바른 순서대로 단어를 클릭하세요!</span>`;
+      document.getElementById('drillScrambleArea').classList.remove('hidden');
+      this.setupDrillScramble(sentence);
     }
     // -------------------------------------------------------------
     // STAGE 6: 말로 외우기 AI 음성 코치
     // -------------------------------------------------------------
-    else if (this.currentMode === 6) {
-      document.getElementById('targetDisplayText').innerHTML = `<span style="color:var(--accent-cyan); font-weight:800;">🎙️ 마이크를 켜고 문장을 말하세요! 틀리면 AI 코치가 알려주고 리셋됩니다.</span>`;
+    else if (modeKey === '6') {
+      document.getElementById('targetDisplayText').innerHTML = `<span style="color:var(--accent-cyan); font-weight:800;">🎙️ STAGE 6: 말로 외우기 AI 코치! 마이크를 켜고 문장을 말하세요. 틀리면 즉시 음성 피드백!</span>`;
       document.getElementById('stage6VoiceCoachArea').classList.remove('hidden');
       document.getElementById('revealArea').classList.remove('hidden');
       this.setupStage6VoiceCoach(sentence, curText.language);
     }
     // -------------------------------------------------------------
-    // DRILL: 타임어택 단어 나열
+    // FINAL DRILL: ⚡ 끝판왕 타임어택 백지 블라인드 - 바뀜!
     // -------------------------------------------------------------
-    else if (this.currentMode === 'drill') {
+    else if (modeKey === 'drill') {
       const isCustomWeak = (curText.weakList || []).length > 0;
-      const drillLabel = isCustomWeak ? '🔥 취약 문장 타임어택 단어 나열' : '⏱️ 전체 문장 타임어택 단어 나열';
-      document.getElementById('targetDisplayText').innerHTML = `<span style="color:var(--accent-gold); font-weight:800;">${drillLabel}! 제한시간 내에 올바른 순서대로 단어를 클릭하세요!</span>`;
-      document.getElementById('drillScrambleArea').classList.remove('hidden');
-      this.setupDrillScramble(sentence);
+      const drillLabel = isCustomWeak ? '⚡ FINAL DRILL [취약 문장 끝판왕 타임어택 블라인드]' : '⚡ FINAL DRILL [전체 문장 끝판왕 타임어택 블라인드]';
+      document.getElementById('targetDisplayText').innerHTML = `<span style="color:var(--accent-rose); font-weight:800;">${drillLabel}! 제한시간 내에 백지 상태에서 완주하지 못하면 처음부터 다시 씁니다!</span>`;
+      document.getElementById('typingArea').classList.remove('hidden');
+      this.setupStage5Blind(sentence);
     }
 
     this.renderSentenceList();
   },
 
   hideAllCardContainers() {
+    document.getElementById('stage15SliderArea').classList.add('hidden');
     document.getElementById('stage3ChosungArea').classList.add('hidden');
     document.getElementById('stage4SnowballArea').classList.add('hidden');
     document.getElementById('stage6VoiceCoachArea').classList.add('hidden');
@@ -1281,6 +1380,130 @@ const App = {
     document.getElementById('revealArea').classList.add('hidden');
     document.getElementById('revealedOriginalText').classList.add('hidden');
     document.getElementById('errorAlertBanner').classList.add('hidden');
+  },
+
+  // --------------------------------------------------------------------------
+  // STAGE 1.5: 슬라이더 가림막 (밀어서 읽기 암기 모듈)
+  // --------------------------------------------------------------------------
+  splitSentenceIntoLines(sentence) {
+    if (!sentence) return [];
+    if (sentence.includes('\n')) {
+      return sentence.split(/\r?\n/).map(s => s.trim()).filter(s => s.length > 0);
+    }
+    // 긴 문장(35자 이상)의 경우 자연스러운 쉼표, 접속사, 공백을 찾아 2줄로 분할하여 별개 마스킹 부여
+    if (sentence.length >= 35) {
+      const mid = Math.floor(sentence.length / 2);
+      const searchStart = Math.floor(sentence.length * 0.25);
+      const searchEnd = Math.floor(sentence.length * 0.75);
+      let bestIdx = -1;
+      let bestScore = -999;
+
+      for (let i = searchStart; i <= searchEnd; i++) {
+        const ch = sentence[i];
+        let score = 0;
+        if (ch === ',' || ch === ';' || ch === '?' || ch === '!') {
+          score = 100 - Math.abs(i - mid);
+        } else if (ch === ' ' && (sentence[i - 1] === ',' || sentence[i - 1] === '.')) {
+          score = 90 - Math.abs(i - mid);
+        } else if (ch === ' ') {
+          score = 50 - Math.abs(i - mid);
+        }
+        if (score > bestScore) {
+          bestScore = score;
+          bestIdx = i;
+        }
+      }
+
+      if (bestIdx > 0) {
+        const splitPos = (sentence[bestIdx] === ' ') ? bestIdx : bestIdx + 1;
+        const line1 = sentence.slice(0, splitPos).trim();
+        const line2 = sentence.slice(splitPos).trim();
+        if (line1 && line2) {
+          return [line1, line2];
+        }
+      }
+    }
+    return [sentence];
+  },
+
+  setupStage15Slider(sentence) {
+    const container = document.getElementById('sliderLinesList');
+    if (!container) return;
+
+    const lines = this.splitSentenceIntoLines(sentence);
+    this.stage15State = {
+      lines,
+      passed: new Array(lines.length).fill(false)
+    };
+
+    container.innerHTML = lines.map((line, idx) => `
+      <div class="slider-line-item" id="sliderLineItem_${idx}">
+        <div class="slider-text-box">
+          <div class="slider-text-layer" id="sliderTextLayer_${idx}">${this.escapeHtml(line)}</div>
+          <div class="slider-mask-layer" id="sliderMaskLayer_${idx}" style="width: 100%;">
+            <span class="mask-lock-icon">🔒 밀어서 읽기</span>
+          </div>
+        </div>
+        <div class="slider-control-row">
+          <span class="slider-label" style="font-size:0.85rem; color:var(--text-dim); font-weight:700;">👉 ${lines.length > 1 ? `${idx + 1}줄 밀기:` : '밀기:'}</span>
+          <input type="range" class="mask-range-slider" id="maskSlider_${idx}" min="0" max="100" value="0" data-idx="${idx}">
+          <span class="slider-status-tag" id="maskSliderPct_${idx}">0%</span>
+        </div>
+      </div>
+    `).join('');
+
+    lines.forEach((line, idx) => {
+      const slider = document.getElementById(`maskSlider_${idx}`);
+      const mask = document.getElementById(`sliderMaskLayer_${idx}`);
+      const pctTag = document.getElementById(`maskSliderPct_${idx}`);
+      const lineItem = document.getElementById(`sliderLineItem_${idx}`);
+
+      if (!slider || !mask || !pctTag) return;
+
+      slider.addEventListener('input', (e) => {
+        const val = parseInt(e.target.value, 10);
+        const remainWidth = Math.max(0, 100 - val);
+        mask.style.width = `${remainWidth}%`;
+        pctTag.textContent = `${val}%`;
+
+        if (val % 10 === 0) {
+          SoundFX.playKeyClick();
+        }
+
+        if (val >= 95) {
+          if (!this.stage15State.passed[idx]) {
+            this.stage15State.passed[idx] = true;
+            slider.value = 100;
+            slider.disabled = true;
+            mask.style.width = '0%';
+            pctTag.innerHTML = '통과! ✅';
+            lineItem.classList.add('passed');
+            SoundFX.playWordCheck();
+            VisualFX.spawnHit(slider.getBoundingClientRect().right - 20, slider.getBoundingClientRect().top + 10, 8);
+
+            const allPassed = this.stage15State.passed.every(p => p === true);
+            if (allPassed) {
+              SoundFX.playSentenceMastered();
+              VisualFX.spawnBurst(window.innerWidth / 2, window.innerHeight / 2, 50);
+              setTimeout(() => {
+                this.markCurrentAsMemorized(false);
+              }, 700);
+            }
+          }
+        }
+      });
+
+      const handleRelease = () => {
+        if (!this.stage15State.passed[idx]) {
+          slider.value = 0;
+          mask.style.width = '100%';
+          pctTag.textContent = '0%';
+        }
+      };
+      slider.addEventListener('change', handleRelease);
+      slider.addEventListener('mouseup', handleRelease);
+      slider.addEventListener('touchend', handleRelease);
+    });
   },
 
   // --------------------------------------------------------------------------
@@ -1844,12 +2067,11 @@ const App = {
     }
 
     const curText = Store.getCurrentText();
-    curText.stepProgress = curText.stepProgress || { 1: {}, 2: {}, 3: {}, 4: {}, 5: {}, 6: {} };
+    curText.stepProgress = curText.stepProgress || { '1': {}, '1.5': {}, '2': {}, '3': {}, '4': {}, '5': {}, '6': {}, 'drill': {} };
 
-    if (typeof this.currentMode === 'number') {
-      curText.stepProgress[this.currentMode] = curText.stepProgress[this.currentMode] || {};
-      curText.stepProgress[this.currentMode][item.originalIndex] = true;
-    }
+    const modeKey = String(this.currentMode);
+    curText.stepProgress[modeKey] = curText.stepProgress[modeKey] || {};
+    curText.stepProgress[modeKey][item.originalIndex] = true;
 
     if (this.currentMode === 'drill') {
       curText.weakList = (curText.weakList || []).filter(idx => idx !== item.originalIndex);
@@ -1868,35 +2090,39 @@ const App = {
     const totalSentences = curText.sentences.length;
     let stepAllCleared = false;
 
-    if (typeof this.currentMode === 'number') {
-      const stepProg = curText.stepProgress[this.currentMode] || {};
-      const passedCount = Object.keys(stepProg).filter(k => stepProg[k]).length;
-      if (passedCount >= totalSentences) {
-        stepAllCleared = true;
-      }
+    const stepProg = curText.stepProgress[modeKey] || {};
+    const passedCount = Object.keys(stepProg).filter(k => stepProg[k]).length;
+    if (passedCount >= totalSentences) {
+      stepAllCleared = true;
     }
 
     if (stepAllCleared) {
       SoundFX.playStageClear();
       VisualFX.spawnBurst(window.innerWidth / 2, window.innerHeight / 2, 80);
 
-      if (this.currentMode === 6) {
+      const stageSequence = [1, '1.5', 2, 3, 4, 5, 6, 'drill'];
+      const curIdx = stageSequence.findIndex(s => String(s) === modeKey);
+
+      if (curIdx === stageSequence.length - 1) {
+        // 끝판왕 FINAL DRILL까지 전부 클리어!
         this.showCongratulationModal();
         this.isTransitioning = false;
       } else {
         const stageNames = {
-          1: 'STAGE 1: 정독 & 뇌새김',
-          2: 'STAGE 2: 키워드 강제인출',
-          3: 'STAGE 3: 초성 단어 락커',
-          4: 'STAGE 4: 스노우볼 30% 조립',
-          5: 'STAGE 5: 타임어택 백지 블라인드',
-          6: 'STAGE 6: 말로 외우기 AI 코치'
+          '1': 'STAGE 1: 정독 & 뇌새김',
+          '1.5': 'STAGE 1.5: 슬라이더 가림막',
+          '2': 'STAGE 2: 키워드 강제인출',
+          '3': 'STAGE 3: 초성 단어 락커',
+          '4': 'STAGE 4: 스노우볼 30% 조립',
+          '5': 'STAGE 5: 타임어택 단어 나열',
+          '6': 'STAGE 6: 말로 외우기 AI 코치',
+          'drill': 'FINAL DRILL: 타임어택 백지 블라인드'
         };
-        const nextMode = this.currentMode + 1;
-        document.getElementById('stageClearTitle').textContent = `🎉 ${stageNames[this.currentMode]} 정복 완료!`;
+        const nextMode = stageSequence[curIdx + 1];
+        document.getElementById('stageClearTitle').textContent = `🎉 ${stageNames[modeKey]} 정복 완료!`;
         document.getElementById('stageClearMessage').innerHTML = `
           모든 문장의 훈련을 완벽하게 마스터했습니다!<br>
-          이제 다음 단계인 <strong>${stageNames[nextMode]}</strong> 단계로 진격합니다!
+          이제 다음 단계인 <strong>${stageNames[String(nextMode)]}</strong> 단계로 진격합니다!
         `;
         document.getElementById('modalStageClear').classList.remove('hidden');
         this.isTransitioning = false;
@@ -2050,16 +2276,27 @@ const App = {
     if (!curText || !curText.sentences || curText.sentences.length === 0) return;
 
     const total = curText.sentences.length;
-    // STAGE 6 최종 마스터 완료된 문장 기준 (또는 가장 높은 단계)
-    const finalProg = (curText.stepProgress && (curText.stepProgress[6] || curText.stepProgress[5])) || {};
-    const mastered = Object.keys(finalProg).filter(k => finalProg[k]).length;
+    // FINAL DRILL 또는 STAGE 6 클리어 완료된 문장 기준
+    const drillProg = (curText.stepProgress && curText.stepProgress['drill']) || {};
+    const stage6Prog = (curText.stepProgress && curText.stepProgress['6']) || {};
+    const mastered = curText.sentences.filter((_, idx) => drillProg[idx] || stage6Prog[idx]).length;
     const pct = Math.round((mastered / total) * 100);
 
     document.getElementById('masteryRateText').textContent = `${pct}%`;
     document.getElementById('masteryProgressBar').style.width = `${pct}%`;
     document.getElementById('sidebarCountBadge').textContent = `${mastered} / ${total}`;
 
-    const stepLabel = typeof this.currentMode === 'number' ? `STAGE ${this.currentMode} 진행` : '타임어택 단어 나열';
+    const stageNames = {
+      '1': 'STAGE 1: 정독 & 뇌새김',
+      '1.5': 'STAGE 1.5: 슬라이더 가림막',
+      '2': 'STAGE 2: 키워드 강제인출',
+      '3': 'STAGE 3: 초성 단어 락커',
+      '4': 'STAGE 4: 스노우볼 30% 조립',
+      '5': 'STAGE 5: 타임어택 단어 나열',
+      '6': 'STAGE 6: 말로 외우기 AI 코치',
+      'drill': 'FINAL DRILL: 타임어택 블라인드'
+    };
+    const stepLabel = stageNames[String(this.currentMode)] || '학습 진행';
     document.getElementById('stepProgressLabel').textContent = stepLabel;
   },
 
@@ -2072,7 +2309,8 @@ const App = {
     }
 
     const sentences = curText.sentences;
-    const curStepProg = (curText.stepProgress && curText.stepProgress[this.currentMode]) || {};
+    const modeKey = String(this.currentMode);
+    const curStepProg = (curText.stepProgress && curText.stepProgress[modeKey]) || {};
     const weakList = curText.weakList || [];
     const activeItem = this.getCurrentSentenceData();
 

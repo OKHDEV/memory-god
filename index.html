@@ -78,12 +78,17 @@
       </div>
     </header>
 
-    <!-- 6단계 고난도 뇌과학 마스터리 탭 바 -->
+    <!-- 8대 고난도 뇌과학 마스터리 탭 바 -->
     <nav class="mastery-nav">
       <button class="nav-tab active" data-mode="1">
         <span class="tab-step">STAGE 1</span>
         <span class="tab-title">🎧 정독 & 뇌새김</span>
         <span class="tab-desc">소리와 호흡으로 각인</span>
+      </button>
+      <button class="nav-tab" data-mode="1.5">
+        <span class="tab-step">STAGE 1.5</span>
+        <span class="tab-title">🎚️ 슬라이더 가림막</span>
+        <span class="tab-desc">오른쪽으로 밀어 읽기</span>
       </button>
       <button class="nav-tab" data-mode="2">
         <span class="tab-step">STAGE 2</span>
@@ -102,8 +107,8 @@
       </button>
       <button class="nav-tab" data-mode="5">
         <span class="tab-step">STAGE 5</span>
-        <span class="tab-title">⚡ 타임어택 블라인드</span>
-        <span class="tab-desc">제한시간 내 완주 못하면 리셋</span>
+        <span class="tab-title">🔥 타임어택 단어 나열</span>
+        <span class="tab-desc">제한시간 내 순서 재배열</span>
       </button>
       <button class="nav-tab" data-mode="6">
         <span class="tab-step">STAGE 6</span>
@@ -111,9 +116,9 @@
         <span class="tab-desc">틀리면 음성 코칭 & 리셋</span>
       </button>
       <button class="nav-tab nav-tab-drill" data-mode="drill">
-        <span class="tab-step">DRILL</span>
-        <span class="tab-title">🔥 타임어택 단어 나열</span>
-        <span class="tab-desc">전체/취약 단어 순서 재배열</span>
+        <span class="tab-step">FINAL DRILL</span>
+        <span class="tab-title">⚡ 타임어택 블라인드</span>
+        <span class="tab-desc">끝판왕: 못 쓰면 처음부터!</span>
       </button>
     </nav>
 
@@ -146,6 +151,11 @@
               </button>
             </div>
 
+            <!-- 1.5단계: 슬라이더 가림막 안내 -->
+            <div id="ctrlStep15" class="sub-ctrl-panel hidden">
+              <span class="preview-hint" style="color:var(--accent-gold)">🎚️ 가림막 슬라이더를 잡고 오른쪽으로 쭈우욱 밀어서 문장을 소리 내어 읽고 통과하세요!</span>
+            </div>
+
             <!-- 2단계: 핵심 키워드 인출 난이도 (기본: 어려움) -->
             <div id="ctrlStep2" class="sub-ctrl-panel hidden">
               <label>키워드 소멸 난이도:</label>
@@ -166,14 +176,19 @@
               <span id="chainingRangeText" class="chain-info-text">🔗 30% 힌트 단어를 징검다리 삼아 나머지 70% 빈칸을 직접 타이핑하세요!</span>
             </div>
 
-            <!-- 5단계: 타임어택 백지 블라인드 안내 -->
+            <!-- 5단계: 타임어택 단어 나열 안내 -->
             <div id="ctrlStep5" class="sub-ctrl-panel hidden">
-              <span class="preview-hint" style="color:var(--accent-rose)">⚡ 제한시간 내에 백지 상태에서 끝까지 입력하지 못하면 처음부터 다시 씁니다!</span>
+              <span class="preview-hint" style="color:var(--accent-gold)">🔥 제한시간 내에 올바른 순서대로 단어들을 클릭해 문장을 완성하세요!</span>
             </div>
 
             <!-- 6단계: 말로 외우기 AI 음성 코치 안내 -->
             <div id="ctrlStep6" class="sub-ctrl-panel hidden">
               <span class="preview-hint" style="color:var(--accent-cyan)">🎙️ 마이크를 켜고 외운 문장을 자연스럽게 말해보세요! (유사 발음 75% 이상 합격 인정)</span>
+            </div>
+
+            <!-- DRILL: 끝판왕 타임어택 백지 블라인드 안내 -->
+            <div id="ctrlDrill" class="sub-ctrl-panel hidden">
+              <span class="preview-hint" style="color:var(--accent-rose)">⚡ 끝판왕 타임어택! 제한시간 내에 백지 상태에서 끝까지 입력하지 못하면 처음부터 다시 씁니다!</span>
             </div>
           </div>
         </div>
@@ -211,6 +226,16 @@
               <p id="targetDisplayText" class="main-sentence-text">
                 문장을 불러오는 중입니다...
               </p>
+            </div>
+
+            <!-- STAGE 1.5: 슬라이더 가림막 전용 영역 -->
+            <div id="stage15SliderArea" class="stage15-slider-container hidden">
+              <div class="slider-guidance-tip">
+                👉 문장별 슬라이더를 잡고 오른쪽으로 쭈우욱 밀면 가려진 글자가 나타납니다. 눈으로 읽으며 끝까지 밀어 통과하세요!
+              </div>
+              <div id="sliderLinesList" class="slider-lines-list">
+                <!-- JS로 문장/줄별 슬라이더 가림막 동적 생성 -->
+              </div>
             </div>
 
             <!-- STAGE 3: 단어별 초성 락커 영역 -->

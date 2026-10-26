@@ -407,12 +407,12 @@ body {
 }
 
 /* ==========================================================================
-   6단계 마스터리 네비게이션 탭 (아케이드 스테이지 스타일)
+   8대 마스터리 네비게이션 탭 (아케이드 스테이지 스타일)
    ========================================================================== */
 .mastery-nav {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 10px;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 8px;
 }
 
 .nav-tab {
@@ -1905,4 +1905,139 @@ label {
 
 .coach-icon {
   font-size: 1.5rem;
+}
+
+/* ==========================================================================
+   STAGE 1.5: 슬라이더 가림막 (밀어서 읽기 암기)
+   ========================================================================== */
+.stage15-slider-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+
+.slider-guidance-tip {
+  font-size: 0.88rem;
+  color: var(--accent-gold);
+  background: rgba(251, 191, 36, 0.1);
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  border-left: 3px solid var(--accent-gold);
+}
+
+.slider-lines-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+}
+
+.slider-line-item {
+  position: relative;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: var(--transition);
+}
+
+.slider-line-item.passed {
+  border-color: rgba(16, 185, 129, 0.5);
+  background: rgba(16, 185, 129, 0.08);
+}
+
+.slider-text-box {
+  position: relative;
+  min-height: 48px;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+}
+
+.slider-text-layer {
+  font-size: calc(1.2rem * var(--font-scale));
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--text-main);
+  user-select: none;
+  word-break: keep-all;
+  width: 100%;
+}
+
+/* 가림막 레이어 (오른쪽으로 밀려나며 글자 공개) */
+.slider-mask-layer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  background: #0b1120;
+  backdrop-filter: blur(8px);
+  pointer-events: none;
+  transition: width 0.05s linear;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding-left: 10px;
+  border-left: 3px solid var(--accent-gold);
+  box-shadow: -4px 0 12px rgba(251, 191, 36, 0.3);
+}
+
+.slider-line-item.passed .slider-mask-layer {
+  width: 0% !important;
+  border-left-color: var(--accent-green);
+}
+
+.slider-control-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.mask-range-slider {
+  flex: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  outline: none;
+  cursor: pointer;
+}
+
+.mask-range-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  cursor: grab;
+  box-shadow: 0 0 14px rgba(251, 191, 36, 0.6);
+  transition: transform 0.1s ease;
+}
+
+.mask-range-slider::-webkit-slider-thumb:active {
+  cursor: grabbing;
+  transform: scale(1.2);
+}
+
+.slider-status-tag {
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: var(--accent-gold);
+  min-width: 65px;
+  text-align: right;
+}
+
+.slider-line-item.passed .slider-status-tag {
+  color: #34d399;
 }
