@@ -127,6 +127,11 @@
         <span class="tab-title">⚡ 타임어택 블라인드</span>
         <span class="tab-desc">끝판왕: 못 쓰면 처음부터!</span>
       </button>
+      <button class="nav-tab nav-tab-arcade" data-mode="minigame">
+        <span class="tab-step">ARCADE</span>
+        <span class="tab-title">🎮 미니게임 대전</span>
+        <span class="tab-desc">NPC 배틀 & 무한 점수전!</span>
+      </button>
     </nav>
 
     <!-- 메인 워크스페이스 그리드 -->
@@ -359,6 +364,204 @@
               <button id="btnToggleReveal" class="btn btn-outline">
                 <span id="revealBtnLabel">👁️ 정답 원문 확인 (Space)</span>
               </button>
+            </div>
+          </div>
+
+          <!-- 🎮 미니게임 아케이드 워크스페이스 -->
+          <div id="minigameWorkspace" class="minigame-workspace hidden">
+            <!-- 아케이드 헤더 바: 게임 탭, 난이도, 점수 -->
+            <div class="arcade-header-bar">
+              <div class="arcade-game-tabs">
+                <button class="arcade-tab-btn active" data-game="bomb">
+                  <span>💣</span> 폭탄 릴레이
+                </button>
+                <button class="arcade-tab-btn" data-game="acid">
+                  <span>🌧️</span> 산성비 디펜스
+                </button>
+                <button class="arcade-tab-btn" data-game="race">
+                  <span>🏎️</span> 문장 질주 배틀
+                </button>
+              </div>
+
+              <div class="arcade-settings-group">
+                <div class="difficulty-toggle-box">
+                  <span class="diff-label">난이도:</span>
+                  <button class="btn-diff active" data-diff="normal">⭐ 보통</button>
+                  <button class="btn-diff" data-diff="hard">🔥 하드</button>
+                </div>
+                <div class="arcade-score-badge">
+                  <span class="score-icon">🏆</span>
+                  <span class="score-text">최고: <strong id="arcadeHighScore">0</strong>점</span>
+                  <span class="score-sep">|</span>
+                  <span class="current-score-text">현재: <strong id="arcadeCurrentScore">0</strong>점</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 게임 1 아레나: 💣 끄투식 폭탄 릴레이 -->
+            <div id="arenaBomb" class="arcade-arena">
+              <div class="bomb-arena-layout">
+                <div class="arena-top-status">
+                  <span class="round-badge" id="bombRoundBadge">ROUND 1 / 5</span>
+                  <span class="arena-tip-text">시한폭탄이 터지기 전에 단어를 맞추고 패스하세요! (틀려도 게임오버 없이 점수 경쟁)</span>
+                </div>
+
+                <div class="bomb-circle-container">
+                  <!-- 중앙 폭탄 -->
+                  <div class="bomb-center-stage" id="bombCenterStage">
+                    <div class="bomb-visual" id="bombVisual">💣</div>
+                    <div class="bomb-fuse-timer" id="bombFuseTimer">10s</div>
+                  </div>
+
+                  <!-- 4인 플레이어 스테이션 -->
+                  <!-- 북: 🐱 냥냥박사 -->
+                  <div class="bomb-player-slot slot-top" id="slotNpc1">
+                    <div class="player-avatar">🐱</div>
+                    <div class="player-name">냥냥박사</div>
+                    <div class="player-score" id="scoreNpc1">0점</div>
+                    <div class="player-bubble hidden" id="bubbleNpc1">💭 고민 중...</div>
+                  </div>
+
+                  <!-- 동: 🤖 알파독 -->
+                  <div class="bomb-player-slot slot-right" id="slotNpc2">
+                    <div class="player-avatar">🤖</div>
+                    <div class="player-name">알파독</div>
+                    <div class="player-score" id="scoreNpc2">0점</div>
+                    <div class="player-bubble hidden" id="bubbleNpc2">⚡ 연산 중...</div>
+                  </div>
+
+                  <!-- 서: 👻 고스트 -->
+                  <div class="bomb-player-slot slot-left" id="slotNpc3">
+                    <div class="player-avatar">👻</div>
+                    <div class="player-name">고스트</div>
+                    <div class="player-score" id="scoreNpc3">0점</div>
+                    <div class="player-bubble hidden" id="bubbleNpc3">히히~ 패스!</div>
+                  </div>
+
+                  <!-- 남: 👤 나 (Player) -->
+                  <div class="bomb-player-slot slot-bottom active-turn" id="slotPlayer">
+                    <div class="player-avatar">👤</div>
+                    <div class="player-name">나 (Player)</div>
+                    <div class="player-score" id="scorePlayer">0점</div>
+                    <div class="player-combo-tag" id="playerBombCombo">0 COMBO</div>
+                  </div>
+                </div>
+
+                <!-- 내 턴 단어 4지선다 인출 패널 -->
+                <div class="bomb-question-panel" id="bombQuestionPanel">
+                  <div class="bomb-prompt-sentence" id="bombPromptSentence">
+                    문제를 준비 중입니다...
+                  </div>
+                  <div class="bomb-options-grid" id="bombOptionsGrid">
+                    <!-- JS로 4개 옵션 버튼 동적 생성 -->
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 게임 2 아레나: 🌧️ 산성비 단어 디펜스 -->
+            <div id="arenaAcid" class="arcade-arena hidden">
+              <div class="acid-arena-layout">
+                <div class="acid-header-row">
+                  <div class="acid-player-stat">
+                    <span class="avatar-tag">👤 나</span>
+                    <strong id="acidPlayerScore" class="stat-number">0</strong>점
+                    <span id="acidPlayerCombo" class="combo-pill">0 COMBO</span>
+                  </div>
+                  <div class="acid-timer-box">
+                    <span class="timer-icon">⏱️</span>
+                    <span id="acidTimerText" class="timer-big">60s</span>
+                  </div>
+                  <div class="acid-npc-stat">
+                    <span class="avatar-tag">🤖 사이버 라이벌</span>
+                    <strong id="acidNpcScore" class="stat-number">0</strong>점
+                  </div>
+                </div>
+
+                <div class="acid-sky-screen" id="acidSkyScreen">
+                  <!-- 낙하하는 단어들이 동적 렌더링됨 -->
+                </div>
+
+                <div class="acid-bottom-panel">
+                  <div class="acid-input-row">
+                    <input type="text" id="acidInput" class="acid-input-field" placeholder="떨어지는 단어를 타이핑하고 Enter!" autocomplete="off" spellcheck="false">
+                    <button id="btnAcidSubmit" class="btn btn-primary">발사 (Enter)</button>
+                  </div>
+                  <div class="acid-tip-legend">
+                    <span>아이템: <span class="tag-ice">❄️ 정지</span> <span class="tag-bomb">💣 전체폭파</span> <span class="tag-double">✨ 2배</span> | 바닥에 닿아도 죽지 않고 감점(-15)만 됩니다!</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 게임 3 아레나: 🏎️ 문장 질주 1:1 레이싱 -->
+            <div id="arenaRace" class="arcade-arena hidden">
+              <div class="race-arena-layout">
+                <div class="race-header-row">
+                  <span class="lap-badge" id="raceLapBadge">LAP 1 / 3</span>
+                  <div class="race-score-display">
+                    <span>👤 나: <strong id="racePlayerScore">0</strong>점</span>
+                    <span style="color:var(--text-muted); margin: 0 6px;">VS</span>
+                    <span>🤖 터보봇: <strong id="raceNpcScore">0</strong>점</span>
+                  </div>
+                </div>
+
+                <div class="race-tracks-container">
+                  <!-- 내 트랙 -->
+                  <div class="race-track-lane">
+                    <div class="track-label">👤 나 (Player)</div>
+                    <div class="track-road">
+                      <div class="track-finish-line">🏁</div>
+                      <div class="race-car-unit player-car" id="playerCar">🏎️💨</div>
+                      <div class="track-progress-fill" id="playerTrackFill" style="width: 0%"></div>
+                    </div>
+                  </div>
+
+                  <!-- NPC 트랙 -->
+                  <div class="race-track-lane">
+                    <div class="track-label">🤖 터보봇 (AI)</div>
+                    <div class="track-road">
+                      <div class="track-finish-line">🏁</div>
+                      <div class="race-car-unit npc-car" id="npcCar">🚗💨</div>
+                      <div class="track-progress-fill" id="npcTrackFill" style="width: 0%"></div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="race-gameplay-panel">
+                  <div class="race-prompt-card">
+                    <div class="race-target-label">🎯 순서대로 올바른 다음 단어를 클릭해 부스터를 발동하세요!</div>
+                    <div class="race-sentence-progress" id="raceSentenceProgress">
+                      <!-- 조립 완료된 단어들 -->
+                    </div>
+                  </div>
+                  <div class="race-word-choices" id="raceWordChoices">
+                    <!-- 클릭 가능한 단어 버튼들 -->
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 미니게임 결과 오버레이 -->
+            <div id="minigameResultOverlay" class="minigame-result-overlay hidden">
+              <div class="result-modal-card">
+                <div class="result-trophy-icon" id="resultTrophyIcon">🏆</div>
+                <h2 id="resultTitleText" class="result-title">게임 종료!</h2>
+                <p id="resultSubText" class="result-desc">플레이 결과 집계 중...</p>
+
+                <div class="result-stats-board" id="resultStatsBoard">
+                  <!-- 스코어 및 랭킹 -->
+                </div>
+
+                <div class="result-actions-row">
+                  <button id="btnRestartMiniGame" class="btn btn-primary btn-lg">
+                    <span>🔄</span> 다시 도전하기
+                  </button>
+                  <button id="btnSwitchMiniGame" class="btn btn-secondary btn-lg">
+                    <span>🎮</span> 다른 게임 선택
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
 

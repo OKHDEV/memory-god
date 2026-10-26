@@ -2460,3 +2460,864 @@ label {
   font-size: 0.95rem;
   line-height: 1.6;
 }
+
+/* ==========================================================================
+   🎮 ARCADE 미니게임 대전 스타일링
+   ========================================================================== */
+.nav-tab-arcade {
+  border-color: rgba(236, 72, 153, 0.6) !important;
+  background: linear-gradient(135deg, rgba(236, 72, 153, 0.15), rgba(168, 85, 247, 0.15)) !important;
+}
+
+.nav-tab-arcade:hover,
+.nav-tab-arcade.active {
+  background: linear-gradient(135deg, rgba(236, 72, 153, 0.35), rgba(168, 85, 247, 0.35)) !important;
+  border-color: #ec4899 !important;
+  box-shadow: 0 0 16px rgba(236, 72, 153, 0.5) !important;
+}
+
+.minigame-workspace {
+  background: rgba(15, 23, 42, 0.96);
+  border: 1px solid rgba(236, 72, 153, 0.35);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 0 35px rgba(236, 72, 153, 0.18), inset 0 0 20px rgba(0, 0, 0, 0.5);
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* 아케이드 헤더 바 */
+.arcade-header-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.arcade-game-tabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.arcade-tab-btn {
+  background: rgba(30, 41, 59, 0.8);
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  font-weight: 700;
+  font-size: 0.92rem;
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: var(--transition);
+}
+
+.arcade-tab-btn:hover {
+  color: var(--text-main);
+  background: rgba(51, 65, 85, 0.9);
+  border-color: var(--accent-cyan);
+}
+
+.arcade-tab-btn.active {
+  background: linear-gradient(135deg, rgba(236, 72, 153, 0.3), rgba(168, 85, 247, 0.4));
+  border-color: #ec4899;
+  color: #fff;
+  box-shadow: 0 0 14px rgba(236, 72, 153, 0.4);
+}
+
+.arcade-settings-group {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.difficulty-toggle-box {
+  display: flex;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: var(--radius-sm);
+  padding: 3px;
+  border: 1px solid var(--border-color);
+}
+
+.diff-label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  padding: 0 6px;
+  font-weight: 700;
+}
+
+.btn-diff {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.btn-diff.active {
+  background: var(--accent-gold);
+  color: #000;
+  box-shadow: 0 0 8px rgba(251, 191, 36, 0.5);
+}
+
+.btn-diff[data-diff="hard"].active {
+  background: linear-gradient(135deg, #ef4444, #f43f5e);
+  color: #fff;
+  box-shadow: 0 0 10px rgba(244, 63, 94, 0.6);
+}
+
+.arcade-score-badge {
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(251, 191, 36, 0.4);
+  border-radius: var(--radius-sm);
+  padding: 6px 12px;
+  font-size: 0.88rem;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.arcade-score-badge .score-text strong {
+  color: var(--accent-gold);
+}
+
+.arcade-score-badge .current-score-text strong {
+  color: var(--accent-cyan);
+}
+
+.score-sep {
+  color: var(--text-muted);
+  margin: 0 2px;
+}
+
+/* --------------------------------------------------------------------------
+   게임 1: 💣 폭탄 릴레이
+   -------------------------------------------------------------------------- */
+.bomb-arena-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: center;
+  width: 100%;
+}
+
+.arena-top-status {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.round-badge {
+  background: linear-gradient(135deg, rgba(236, 72, 153, 0.3), rgba(168, 85, 247, 0.4));
+  border: 1px solid #ec4899;
+  color: #fbcfe8;
+  font-weight: 800;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+}
+
+.arena-tip-text {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.bomb-circle-container {
+  position: relative;
+  width: 100%;
+  max-width: 580px;
+  height: 290px;
+  margin: 10px auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bomb-center-stage {
+  position: relative;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.bomb-visual {
+  font-size: 4rem;
+  line-height: 1;
+  filter: drop-shadow(0 0 16px rgba(239, 68, 68, 0.7));
+  animation: bombPulse 1s infinite alternate;
+  cursor: default;
+}
+
+@keyframes bombPulse {
+  0% { transform: scale(1); filter: drop-shadow(0 0 10px rgba(239, 68, 68, 0.5)); }
+  100% { transform: scale(1.15) rotate(4deg); filter: drop-shadow(0 0 24px rgba(239, 68, 68, 0.9)); }
+}
+
+.bomb-fuse-timer {
+  background: rgba(239, 68, 68, 0.25);
+  border: 1px solid #ef4444;
+  color: #fca5a5;
+  font-weight: 800;
+  font-size: 1.15rem;
+  padding: 3px 12px;
+  border-radius: 12px;
+  margin-top: 6px;
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.4);
+}
+
+/* 플레이어 슬롯 4위치 */
+.bomb-player-slot {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 14px;
+  background: rgba(30, 41, 59, 0.8);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  min-width: 105px;
+  transition: all 0.25s ease;
+  z-index: 2;
+}
+
+.bomb-player-slot .player-avatar {
+  font-size: 1.8rem;
+  line-height: 1;
+}
+
+.bomb-player-slot .player-name {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-top: 2px;
+}
+
+.bomb-player-slot .player-score {
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: var(--accent-gold);
+}
+
+.bomb-player-slot.active-turn {
+  border-color: #ef4444 !important;
+  background: rgba(239, 68, 68, 0.2) !important;
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.7), inset 0 0 10px rgba(239, 68, 68, 0.3) !important;
+  transform: scale(1.08);
+  z-index: 10;
+}
+
+.player-bubble {
+  position: absolute;
+  top: -34px;
+  background: rgba(15, 23, 42, 0.95);
+  border: 1px solid var(--accent-cyan);
+  color: #67e8f9;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 8px;
+  white-space: nowrap;
+  box-shadow: 0 0 10px rgba(6, 182, 212, 0.4);
+  animation: floatBubble 1.2s infinite alternate ease-in-out;
+}
+
+@keyframes floatBubble {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-4px); }
+}
+
+.player-combo-tag {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #34d399;
+  margin-top: 2px;
+}
+
+.slot-top { top: 0; left: 50%; transform: translateX(-50%); }
+.slot-top.active-turn { transform: translateX(-50%) scale(1.08); }
+
+.slot-bottom { bottom: 0; left: 50%; transform: translateX(-50%); }
+.slot-bottom.active-turn { transform: translateX(-50%) scale(1.08); }
+
+.slot-left { left: 10px; top: 50%; transform: translateY(-50%); }
+.slot-left.active-turn { transform: translateY(-50%) scale(1.08); }
+
+.slot-right { right: 10px; top: 50%; transform: translateY(-50%); }
+.slot-right.active-turn { transform: translateY(-50%) scale(1.08); }
+
+/* 문제 패널 */
+.bomb-question-panel {
+  width: 100%;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  align-items: center;
+}
+
+.bomb-prompt-sentence {
+  font-size: 1.15rem;
+  font-weight: 700;
+  text-align: center;
+  color: var(--text-main);
+  line-height: 1.6;
+}
+
+.bomb-prompt-sentence .blank-highlight {
+  display: inline-block;
+  background: rgba(239, 68, 68, 0.25);
+  border: 1px dashed #ef4444;
+  color: #f87171;
+  padding: 2px 10px;
+  border-radius: 6px;
+  font-weight: 800;
+  animation: pulseBlank 0.8s infinite alternate;
+}
+
+@keyframes pulseBlank {
+  0% { transform: scale(1); border-color: #ef4444; }
+  100% { transform: scale(1.06); border-color: #f87171; box-shadow: 0 0 10px rgba(248, 113, 113, 0.6); }
+}
+
+.bomb-options-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  width: 100%;
+  max-width: 520px;
+}
+
+.btn-bomb-option {
+  background: rgba(30, 41, 59, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: var(--text-main);
+  font-size: 1rem;
+  font-weight: 700;
+  padding: 12px 16px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+  transition: all 0.18s ease;
+}
+
+.btn-bomb-option:hover:not(:disabled) {
+  background: rgba(51, 65, 85, 1);
+  border-color: var(--accent-gold);
+  transform: translateY(-2px);
+  box-shadow: 0 0 14px rgba(251, 191, 36, 0.4);
+}
+
+.btn-bomb-option:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.btn-bomb-option .opt-key-tag {
+  background: rgba(0, 0, 0, 0.35);
+  color: var(--accent-gold);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+/* --------------------------------------------------------------------------
+   게임 2: 🌧️ 산성비 단어 디펜스
+   -------------------------------------------------------------------------- */
+.acid-arena-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.acid-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.4);
+  padding: 10px 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+}
+
+.acid-player-stat, .acid-npc-stat {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.95rem;
+}
+
+.stat-number {
+  font-size: 1.35rem;
+  font-weight: 800;
+}
+
+.acid-player-stat .stat-number {
+  color: var(--accent-cyan);
+}
+
+.acid-npc-stat .stat-number {
+  color: #f87171;
+}
+
+.combo-pill {
+  background: rgba(52, 211, 153, 0.2);
+  border: 1px solid #34d399;
+  color: #34d399;
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 12px;
+}
+
+.acid-timer-box {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.timer-big {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--accent-gold);
+}
+
+.acid-sky-screen {
+  position: relative;
+  width: 100%;
+  height: 310px;
+  background: radial-gradient(circle at 50% 30%, rgba(15, 23, 42, 0.9), rgba(2, 6, 23, 0.98));
+  border: 1px solid rgba(6, 182, 212, 0.35);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-shadow: inset 0 0 25px rgba(0, 0, 0, 0.7);
+}
+
+.acid-sky-screen::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 6px;
+  background: linear-gradient(90deg, rgba(6, 182, 212, 0.6), rgba(239, 68, 68, 0.6));
+  box-shadow: 0 0 12px rgba(6, 182, 212, 0.8);
+}
+
+/* 낙하하는 단어 캡슐 */
+.acid-word-drop {
+  position: absolute;
+  padding: 5px 12px;
+  background: rgba(30, 41, 59, 0.92);
+  border: 1px solid var(--accent-cyan);
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 700;
+  border-radius: 16px;
+  white-space: nowrap;
+  box-shadow: 0 0 12px rgba(6, 182, 212, 0.4);
+  transform: translateX(-50%);
+  user-select: none;
+  transition: transform 0.1s linear;
+}
+
+.acid-word-drop.powerup-freeze {
+  border-color: #60a5fa;
+  background: rgba(37, 99, 235, 0.4);
+  color: #bfdbfe;
+  box-shadow: 0 0 14px rgba(96, 165, 250, 0.6);
+}
+
+.acid-word-drop.powerup-nuke {
+  border-color: #f87171;
+  background: rgba(220, 38, 38, 0.45);
+  color: #fecaca;
+  box-shadow: 0 0 16px rgba(248, 113, 113, 0.7);
+  animation: nukePulse 0.6s infinite alternate;
+}
+
+@keyframes nukePulse {
+  0% { transform: translateX(-50%) scale(1); }
+  100% { transform: translateX(-50%) scale(1.1); }
+}
+
+.acid-word-drop.powerup-double {
+  border-color: #fbbf24;
+  background: rgba(217, 119, 6, 0.4);
+  color: #fef08a;
+  box-shadow: 0 0 14px rgba(251, 191, 36, 0.6);
+}
+
+.acid-bottom-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.acid-input-row {
+  display: flex;
+  gap: 8px;
+}
+
+.acid-input-field {
+  flex: 1;
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(6, 182, 212, 0.5);
+  color: #fff;
+  font-size: 1.1rem;
+  font-weight: 700;
+  padding: 10px 16px;
+  border-radius: var(--radius-sm);
+  outline: none;
+  transition: var(--transition);
+}
+
+.acid-input-field:focus {
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 16px rgba(6, 182, 212, 0.5);
+}
+
+.acid-tip-legend {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.tag-ice { color: #60a5fa; font-weight: 700; }
+.tag-bomb { color: #f87171; font-weight: 700; }
+.tag-double { color: #fbbf24; font-weight: 700; }
+
+/* --------------------------------------------------------------------------
+   게임 3: 🏎️ 문장 질주 1:1 레이싱
+   -------------------------------------------------------------------------- */
+.race-arena-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+
+.race-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.4);
+  padding: 8px 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+}
+
+.lap-badge {
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.3), rgba(245, 158, 11, 0.4));
+  border: 1px solid var(--accent-gold);
+  color: #fef08a;
+  font-weight: 800;
+  padding: 3px 12px;
+  border-radius: 12px;
+  font-size: 0.85rem;
+}
+
+.race-score-display {
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.race-score-display strong {
+  font-size: 1.15rem;
+  color: var(--accent-gold);
+}
+
+.race-tracks-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+}
+
+.race-track-lane {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.track-label {
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: var(--text-muted);
+}
+
+.track-road {
+  position: relative;
+  height: 48px;
+  background: linear-gradient(180deg, #1e293b, #0f172a);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.6);
+}
+
+.track-finish-line {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1.5rem;
+  line-height: 1;
+  z-index: 2;
+  filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.5));
+}
+
+.race-car-unit {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1.8rem;
+  line-height: 1;
+  z-index: 5;
+  transition: left 0.28s cubic-bezier(0.25, 1, 0.5, 1);
+  filter: drop-shadow(0 0 10px rgba(236, 72, 153, 0.6));
+}
+
+.track-progress-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  background: linear-gradient(90deg, rgba(236, 72, 153, 0.25), rgba(168, 85, 247, 0.35));
+  transition: width 0.28s ease;
+  z-index: 1;
+}
+
+.race-gameplay-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: rgba(0, 0, 0, 0.4);
+  padding: 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+}
+
+.race-target-label {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: var(--accent-gold);
+  margin-bottom: 6px;
+}
+
+.race-sentence-progress {
+  min-height: 48px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  padding: 10px 14px;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+  border-radius: var(--radius-sm);
+}
+
+.race-completed-chip {
+  background: rgba(52, 211, 153, 0.25);
+  border: 1px solid #34d399;
+  color: #34d399;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  animation: checkPop 0.25s ease-out;
+}
+
+.race-word-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 6px;
+}
+
+.btn-race-word {
+  background: rgba(30, 41, 59, 0.95);
+  border: 1px solid var(--border-color);
+  color: var(--text-main);
+  font-size: 1.05rem;
+  font-weight: 700;
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.btn-race-word:hover {
+  background: rgba(51, 65, 85, 1);
+  border-color: var(--accent-cyan);
+  transform: translateY(-2px);
+  box-shadow: 0 0 12px rgba(6, 182, 212, 0.4);
+}
+
+/* --------------------------------------------------------------------------
+   공통 미니게임 결과 오버레이
+   -------------------------------------------------------------------------- */
+.minigame-result-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  padding: 20px;
+  animation: fadeIn 0.3s ease;
+}
+
+.result-modal-card {
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.98), rgba(15, 23, 42, 0.98));
+  border: 1px solid rgba(251, 191, 36, 0.6);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 0 45px rgba(251, 191, 36, 0.35);
+  padding: 28px 24px;
+  max-width: 460px;
+  width: 100%;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  animation: scaleUp 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.result-trophy-icon {
+  font-size: 3.5rem;
+  line-height: 1;
+  filter: drop-shadow(0 0 16px rgba(251, 191, 36, 0.8));
+}
+
+.result-title {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--accent-gold);
+}
+
+.result-desc {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+}
+
+.result-stats-board {
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 6px 0;
+}
+
+.result-rank-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.result-rank-row.is-player {
+  background: rgba(236, 72, 153, 0.25);
+  border: 1px solid #ec4899;
+  color: #fff;
+}
+
+.result-rank-row .rank-medal {
+  font-size: 1.15rem;
+  margin-right: 6px;
+}
+
+.result-actions-row {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+/* 모바일 대응 */
+@media (max-width: 768px) {
+  .minigame-workspace {
+    padding: 14px 10px;
+  }
+  .arcade-header-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .arcade-game-tabs {
+    justify-content: space-between;
+  }
+  .arcade-tab-btn {
+    flex: 1;
+    justify-content: center;
+    padding: 6px 8px;
+    font-size: 0.82rem;
+  }
+  .arcade-settings-group {
+    justify-content: space-between;
+  }
+  .bomb-circle-container {
+    height: 240px;
+  }
+  .bomb-player-slot {
+    min-width: 80px;
+    padding: 6px 8px;
+  }
+  .bomb-player-slot .player-avatar {
+    font-size: 1.4rem;
+  }
+  .bomb-player-slot .player-name {
+    font-size: 0.75rem;
+  }
+  .bomb-visual {
+    font-size: 2.8rem;
+  }
+  .bomb-options-grid {
+    grid-template-columns: 1fr;
+  }
+  .acid-sky-screen {
+    height: 260px;
+  }
+  .result-actions-row {
+    flex-direction: column;
+  }
+}

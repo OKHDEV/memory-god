@@ -877,6 +877,908 @@ const SpeechEngine = {
 
 
 // ============================================================================
+// 5.5 아케이드 미니게임 엔진 (MiniGameEngine)
+// ============================================================================
+const MiniGameEngine = {
+  activeGame: 'bomb', // 'bomb' | 'acid' | 'race'
+  difficulty: 'normal', // 'normal' | 'hard'
+  score: 0,
+  combo: 0,
+  highScores: {
+    bomb: { normal: 0, hard: 0 },
+    acid: { normal: 0, hard: 0 },
+    race: { normal: 0, hard: 0 }
+  },
+
+  bomb: {
+    round: 1,
+    maxRounds: 5,
+    fuseSeconds: 10,
+    currentHolder: 0, // 0: Player, 1: Npc1, 2: Npc2, 3: Npc3
+    scores: [0, 0, 0, 0],
+    timerInterval: null,
+    npcTimeout: null,
+    active: false
+  },
+
+  acid: {
+    timerSeconds: 60,
+    playerScore: 0,
+    npcScore: 0,
+    combo: 0,
+    words: [],
+    spawnInterval: null,
+    gameTimerInterval: null,
+    npcInterval: null,
+    animationFrameId: null,
+    isFrozen: false,
+    freezeTimeout: null,
+    isDouble: false,
+    doubleTimeout: null,
+    active: false
+  },
+
+  race: {
+    lap: 1,
+    maxLaps: 3,
+    playerProgress: 0,
+    npcProgress: 0,
+    playerScore: 0,
+    npcScore: 0,
+    npcInterval: null,
+    targetWords: [],
+    assembledWords: [],
+    active: false
+  },
+
+  init() {
+    this.loadHighScores();
+    this.bindEvents();
+    this.updateScoreUI();
+  },
+
+  loadHighScores() {
+    try {
+      const saved = localStorage.getItem('MEMORY_GOD_MINIGAME_SCORES');
+      if (saved) {
+        this.highScores = Object.assign(this.highScores, JSON.parse(saved));
+      }
+    } catch (e) {
+      console.warn('MiniGameEngine loadHighScores error:', e);
+    }
+  },
+
+  saveHighScores() {
+    try {
+      localStorage.setItem('MEMORY_GOD_MINIGAME_SCORES', JSON.stringify(this.highScores));
+    } catch (e) {
+      console.warn('MiniGameEngine saveHighScores error:', e);
+    }
+  },
+
+  bindEvents() {
+    // 게임 탭 전환
+    document.querySelectorAll('.arcade-tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const game = btn.dataset.game;
+        this.switchGame(game);
+      });
+    });
+
+    // 난이도 토글
+    document.querySelectorAll('.btn-diff').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.btn-diff').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        this.setDifficulty(btn.dataset.diff);
+      });
+    });
+
+    // 산성비 단어 전송
+    const acidInput = document.getElementById('acidInput');
+    const btnAcidSubmit = document.getElementById('btnAcidSubmit');
+    if (acidInput && btnAcidSubmit) {
+      acidInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          this.submitAcidWord();
+        }
+      });
+      btnAcidSubmit.addEventListener('click', () => this.submitAcidWord());
+    }
+
+    // 결과 모달 버튼
+    const btnRestart = document.getElementById('btnRestartMiniGame');
+    const btnSwitch = document.getElementById('btnSwitchMiniGame');
+    if (btnRestart) {
+      btnRestart.addEventListener('click', () => {
+        document.getElementById('minigameResultOverlay').classList.add('hidden');
+        this.start(this.activeGame);
+      });
+    }
+    if (btnSwitch) {
+      btnSwitch.addEventListener('click', () => {
+        document.getElementById('minigameResultOverlay').classList.add('hidden');
+        const games = ['bomb', 'acid', 'race'];
+        const nextGame = games[(games.indexOf(this.activeGame) + 1) % games.length];
+        this.switchGame(nextGame);
+      });
+    }
+
+    // 키보드 숫자 1~4 단축키 (폭탄 게임 4지선다용)
+    window.addEventListener('keydown', (e) => {
+      if (!this.bomb.active || this.bomb.currentHolder !== 0) return;
+      if (e.key >= '1' && e.key <= '4') {
+        const idx = parseInt(e.key, 10) - 1;
+        const btns = document.querySelectorAll('.btn-bomb-option');
+        if (btns[idx]) btns[idx].click();
+      }
+    });
+  },
+
+  getPracticeSentences() {
+    const cur = Store.getCurrentText();
+    if (cur && cur.sentences && cur.sentences.length > 0) {
+      return cur.sentences;
+    }
+    return [
+      '인생은 속도가 아니라 올바른 방향이다.',
+      '시작이 반이고 꾸준함이 기적을 만든다.',
+      '지혜로운 자는 남의 실수에서 배운다.',
+      '오늘 걷지 않으면 내일은 뛰어야 한다.',
+      '가장 어두운 밤도 언젠가 아침을 맞이한다.',
+      '꿈을 날짜와 함께 적어놓으면 목표가 된다.',
+      '지식은 배울수록 겸손해지고 지혜로워진다.'
+    ];
+  },
+
+  getAllWords() {
+    const sentences = this.getPracticeSentences();
+    const words = [];
+    sentences.forEach(s => {
+      s.split(/\s+/).forEach(w => {
+        const cleaned = w.replace(/['"`.,~!?]/g, '').trim();
+        if (cleaned.length > 0 && !words.includes(cleaned)) {
+          words.push(cleaned);
+        }
+      });
+    });
+    return words.length > 0 ? words : ['열정', '도전', '성취', '희망', '노력', '성공', '행복', '지혜'];
+  },
+
+  setDifficulty(diff) {
+    this.difficulty = diff;
+    this.updateScoreUI();
+    this.start(this.activeGame);
+  },
+
+  switchGame(gameKey) {
+    this.stopAll();
+    this.activeGame = gameKey;
+    document.querySelectorAll('.arcade-tab-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.game === gameKey);
+    });
+    document.querySelectorAll('.arcade-arena').forEach(arena => arena.classList.add('hidden'));
+
+    if (gameKey === 'bomb') document.getElementById('arenaBomb').classList.remove('hidden');
+    else if (gameKey === 'acid') document.getElementById('arenaAcid').classList.remove('hidden');
+    else if (gameKey === 'race') document.getElementById('arenaRace').classList.remove('hidden');
+
+    this.updateScoreUI();
+    this.start(gameKey);
+  },
+
+  updateScoreUI() {
+    const high = (this.highScores[this.activeGame] && this.highScores[this.activeGame][this.difficulty]) || 0;
+    const elHigh = document.getElementById('arcadeHighScore');
+    const elCur = document.getElementById('arcadeCurrentScore');
+    if (elHigh) elHigh.textContent = high.toLocaleString();
+    if (elCur) elCur.textContent = this.score.toLocaleString();
+  },
+
+  addScore(pts) {
+    this.score += pts;
+    const high = (this.highScores[this.activeGame] && this.highScores[this.activeGame][this.difficulty]) || 0;
+    if (this.score > high) {
+      this.highScores[this.activeGame][this.difficulty] = this.score;
+      this.saveHighScores();
+    }
+    this.updateScoreUI();
+  },
+
+  start(gameKey) {
+    this.stopAll();
+    this.score = 0;
+    this.combo = 0;
+    this.updateScoreUI();
+    const overlay = document.getElementById('minigameResultOverlay');
+    if (overlay) overlay.classList.add('hidden');
+
+    if (gameKey === 'bomb') this.startBombGame();
+    else if (gameKey === 'acid') this.startAcidGame();
+    else if (gameKey === 'race') this.startRaceGame();
+  },
+
+  stopAll() {
+    // 폭탄 타이머 정리
+    clearInterval(this.bomb.timerInterval);
+    clearTimeout(this.bomb.npcTimeout);
+    this.bomb.active = false;
+
+    // 산성비 타이머 정리
+    clearInterval(this.acid.spawnInterval);
+    clearInterval(this.acid.gameTimerInterval);
+    clearInterval(this.acid.npcInterval);
+    if (this.acid.animationFrameId) cancelAnimationFrame(this.acid.animationFrameId);
+    clearTimeout(this.acid.freezeTimeout);
+    clearTimeout(this.acid.doubleTimeout);
+    this.acid.active = false;
+    this.acid.words = [];
+    const sky = document.getElementById('acidSkyScreen');
+    if (sky) sky.innerHTML = '';
+
+    // 레이싱 타이머 정리
+    clearInterval(this.race.npcInterval);
+    this.race.active = false;
+  },
+
+  // --------------------------------------------------------------------------
+  // GAME 1: 💣 끄투식 폭탄 릴레이
+  // --------------------------------------------------------------------------
+  startBombGame() {
+    this.bomb.active = true;
+    this.bomb.round = 1;
+    this.bomb.maxRounds = 5;
+    this.bomb.scores = [0, 0, 0, 0];
+    this.startBombRound();
+  },
+
+  startBombRound() {
+    if (!this.bomb.active) return;
+    clearInterval(this.bomb.timerInterval);
+    clearTimeout(this.bomb.npcTimeout);
+
+    const roundBadge = document.getElementById('bombRoundBadge');
+    if (roundBadge) roundBadge.textContent = `ROUND ${this.bomb.round} / ${this.bomb.maxRounds}`;
+
+    this.renderBombScores();
+    this.passBombTo(0); // 내 차례부터 시작
+  },
+
+  renderBombScores() {
+    const s0 = document.getElementById('scorePlayer');
+    const s1 = document.getElementById('scoreNpc1');
+    const s2 = document.getElementById('scoreNpc2');
+    const s3 = document.getElementById('scoreNpc3');
+    if (s0) s0.textContent = `${this.bomb.scores[0]}점`;
+    if (s1) s1.textContent = `${this.bomb.scores[1]}점`;
+    if (s2) s2.textContent = `${this.bomb.scores[2]}점`;
+    if (s3) s3.textContent = `${this.bomb.scores[3]}점`;
+
+    const comboTag = document.getElementById('playerBombCombo');
+    if (comboTag) comboTag.textContent = `${this.combo} COMBO`;
+  },
+
+  passBombTo(holderIdx) {
+    if (!this.bomb.active) return;
+    clearInterval(this.bomb.timerInterval);
+    clearTimeout(this.bomb.npcTimeout);
+
+    this.bomb.currentHolder = holderIdx;
+    this.bomb.fuseSeconds = this.difficulty === 'hard' ? 6 : 10;
+
+    // 시각적 턴 표시
+    const slots = [
+      document.getElementById('slotPlayer'),
+      document.getElementById('slotNpc1'),
+      document.getElementById('slotNpc2'),
+      document.getElementById('slotNpc3')
+    ];
+    slots.forEach((s, idx) => {
+      if (s) s.classList.toggle('active-turn', idx === holderIdx);
+    });
+
+    ['bubbleNpc1', 'bubbleNpc2', 'bubbleNpc3'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.classList.add('hidden');
+    });
+
+    SoundFX.playWordCheck();
+    VisualFX.spawnHit(window.innerWidth / 2, window.innerHeight * 0.45, 6);
+
+    const fuseTimerEl = document.getElementById('bombFuseTimer');
+    if (fuseTimerEl) fuseTimerEl.textContent = `${this.bomb.fuseSeconds}s`;
+
+    // 째깍째깍 초침 카운트다운
+    this.bomb.timerInterval = setInterval(() => {
+      this.bomb.fuseSeconds--;
+      if (fuseTimerEl) fuseTimerEl.textContent = `${this.bomb.fuseSeconds}s`;
+
+      if (this.bomb.fuseSeconds <= 0) {
+        clearInterval(this.bomb.timerInterval);
+        this.explodeBomb(this.bomb.currentHolder);
+      }
+    }, 1000);
+
+    if (holderIdx === 0) {
+      // 내 턴: 문제 출제
+      this.presentBombQuestion();
+    } else {
+      // NPC 턴: AI 반응
+      const qPrompt = document.getElementById('bombPromptSentence');
+      const qGrid = document.getElementById('bombOptionsGrid');
+      if (qPrompt) qPrompt.innerHTML = `🤖 NPC가 폭탄을 쥐고 암기 단어를 생각 중입니다...`;
+      if (qGrid) qGrid.innerHTML = '';
+
+      const bubbleId = holderIdx === 1 ? 'bubbleNpc1' : (holderIdx === 2 ? 'bubbleNpc2' : 'bubbleNpc3');
+      const bubbleEl = document.getElementById(bubbleId);
+      if (bubbleEl) {
+        bubbleEl.classList.remove('hidden');
+        bubbleEl.textContent = '💭 생각 중...';
+      }
+
+      const npcDelay = this.difficulty === 'hard' 
+        ? (1000 + Math.random() * 800)
+        : (2000 + Math.random() * 1400);
+
+      const passProbability = this.difficulty === 'hard' ? 0.90 : 0.75;
+
+      this.bomb.npcTimeout = setTimeout(() => {
+        if (!this.bomb.active) return;
+        if (Math.random() < passProbability) {
+          if (bubbleEl) bubbleEl.textContent = '💬 정답! 패스~!';
+          this.bomb.scores[holderIdx] += 100;
+          this.renderBombScores();
+          // 다른 사람에게 패스 (나를 포함)
+          const nextHolders = [0, 1, 2, 3].filter(i => i !== holderIdx);
+          const next = nextHolders[Math.floor(Math.random() * nextHolders.length)];
+          setTimeout(() => this.passBombTo(next), 500);
+        } else {
+          // NPC 실수로 폭발
+          if (bubbleEl) bubbleEl.textContent = '💥 으악 틀렸다!!';
+          clearInterval(this.bomb.timerInterval);
+          this.explodeBomb(holderIdx);
+        }
+      }, npcDelay);
+    }
+  },
+
+  presentBombQuestion() {
+    const sentences = this.getPracticeSentences();
+    const sentence = sentences[Math.floor(Math.random() * sentences.length)];
+    const words = sentence.split(/\s+/).filter(w => w.length > 0);
+    const targetIdx = Math.floor(Math.random() * words.length);
+    const targetWord = words[targetIdx].replace(/['"`.,~!?]/g, '');
+
+    const promptHtml = words.map((w, idx) => {
+      if (idx === targetIdx) return `<span class="blank-highlight">[ ? ]</span>`;
+      return App.escapeHtml(w);
+    }).join(' ');
+
+    document.getElementById('bombPromptSentence').innerHTML = promptHtml;
+
+    // 보기 4개 (1개 정답 + 3개 오답 단어)
+    const allWords = this.getAllWords().filter(w => w !== targetWord);
+    for (let i = allWords.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [allWords[i], allWords[j]] = [allWords[j], allWords[i]];
+    }
+    const distractors = allWords.slice(0, 3);
+    const options = [targetWord, ...distractors];
+    for (let i = options.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [options[i], options[j]] = [options[j], options[i]];
+    }
+
+    const grid = document.getElementById('bombOptionsGrid');
+    grid.innerHTML = options.map((opt, i) => `
+      <button class="btn-bomb-option" data-ans="${App.escapeHtml(opt)}" data-correct="${opt === targetWord}">
+        <span class="opt-key-tag">[${i + 1}]</span>
+        <span>${App.escapeHtml(opt)}</span>
+      </button>
+    `).join('');
+
+    grid.querySelectorAll('.btn-bomb-option').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (this.bomb.currentHolder !== 0) return;
+        const isCorrect = btn.dataset.correct === 'true';
+        if (isCorrect) {
+          clearInterval(this.bomb.timerInterval);
+          SoundFX.playWordCheck();
+          VisualFX.spawnBurst(btn.getBoundingClientRect().left + 40, btn.getBoundingClientRect().top + 10, 10);
+          this.combo++;
+          const pts = Math.round(150 * (this.combo >= 2 ? 1.5 : 1));
+          this.bomb.scores[0] += pts;
+          this.addScore(pts);
+          this.renderBombScores();
+
+          // NPC에게 패스
+          const npcs = [1, 2, 3];
+          const next = npcs[Math.floor(Math.random() * npcs.length)];
+          this.passBombTo(next);
+        } else {
+          SoundFX.playErrorThud();
+          VisualFX.shake('error');
+          clearInterval(this.bomb.timerInterval);
+          this.explodeBomb(0);
+        }
+      });
+    });
+  },
+
+  explodeBomb(victimIdx) {
+    if (!this.bomb.active) return;
+    clearInterval(this.bomb.timerInterval);
+    clearTimeout(this.bomb.npcTimeout);
+
+    SoundFX.playErrorThud();
+    VisualFX.shake('error');
+    VisualFX.spawnBurst(window.innerWidth / 2, window.innerHeight * 0.45, 40);
+
+    const victimNames = ['나 (Player)', '냥냥박사', '알파독', '고스트'];
+    const victimSlot = [
+      document.getElementById('slotPlayer'),
+      document.getElementById('slotNpc1'),
+      document.getElementById('slotNpc2'),
+      document.getElementById('slotNpc3')
+    ][victimIdx];
+
+    if (victimSlot) {
+      victimSlot.classList.add('shake-error');
+      setTimeout(() => victimSlot.classList.remove('shake-error'), 600);
+    }
+
+    // 감점 ("안죽게" 계속 진행)
+    this.bomb.scores[victimIdx] = Math.max(0, this.bomb.scores[victimIdx] - 80);
+    if (victimIdx === 0) {
+      this.combo = 0;
+    }
+    this.renderBombScores();
+
+    document.getElementById('bombPromptSentence').innerHTML = `
+      💥 <strong style="color:#ef4444">${victimNames[victimIdx]}</strong>의 자리에서 폭탄이 터졌습니다! (-80점)
+    `;
+    document.getElementById('bombOptionsGrid').innerHTML = '';
+
+    setTimeout(() => {
+      if (!this.bomb.active) return;
+      this.bomb.round++;
+      if (this.bomb.round > this.bomb.maxRounds) {
+        this.finishMiniGame('bomb');
+      } else {
+        this.startBombRound();
+      }
+    }, 1800);
+  },
+
+  // --------------------------------------------------------------------------
+  // GAME 2: 🌧️ 산성비 단어 디펜스
+  // --------------------------------------------------------------------------
+  startAcidGame() {
+    this.acid.active = true;
+    this.acid.timerSeconds = 60;
+    this.acid.playerScore = 0;
+    this.acid.npcScore = 0;
+    this.acid.combo = 0;
+    this.acid.words = [];
+    this.acid.isFrozen = false;
+    this.acid.isDouble = false;
+
+    const sky = document.getElementById('acidSkyScreen');
+    if (sky) sky.innerHTML = '';
+
+    this.updateAcidScoreUI();
+    const input = document.getElementById('acidInput');
+    if (input) {
+      input.value = '';
+      input.focus();
+    }
+
+    // 60초 게임 타이머
+    this.acid.gameTimerInterval = setInterval(() => {
+      this.acid.timerSeconds--;
+      const timerEl = document.getElementById('acidTimerText');
+      if (timerEl) timerEl.textContent = `${this.acid.timerSeconds}s`;
+
+      if (this.acid.timerSeconds <= 0) {
+        this.stopAll();
+        this.finishMiniGame('acid');
+      }
+    }, 1000);
+
+    // 단어 생성 주기
+    const spawnRate = this.difficulty === 'hard' ? 1000 : 1600;
+    this.acid.spawnInterval = setInterval(() => {
+      if (!this.acid.active || this.acid.isFrozen) return;
+      this.spawnAcidWord();
+    }, spawnRate);
+
+    // NPC 요격 주기
+    const npcRate = this.difficulty === 'hard' ? 1200 : 2300;
+    this.acid.npcInterval = setInterval(() => {
+      if (!this.acid.active || this.acid.isFrozen) return;
+      this.npcInterceptAcidWord();
+    }, npcRate);
+
+    // 부드러운 낙하 루프
+    const speed = this.difficulty === 'hard' ? 1.4 : 0.9;
+    const animateFall = () => {
+      if (!this.acid.active) return;
+
+      if (!this.acid.isFrozen) {
+        const skyHeight = sky ? sky.offsetHeight : 310;
+        for (let i = this.acid.words.length - 1; i >= 0; i--) {
+          const item = this.acid.words[i];
+          item.y += speed;
+          if (item.el) {
+            item.el.style.top = `${item.y}px`;
+          }
+
+          // 바닥 도달 (감점 후 제거, 안 죽음)
+          if (item.y >= skyHeight - 24) {
+            if (item.el) item.el.remove();
+            this.acid.words.splice(i, 1);
+            this.acid.playerScore = Math.max(0, this.acid.playerScore - 15);
+            this.acid.combo = 0;
+            this.updateAcidScoreUI();
+            VisualFX.spawnHit(window.innerWidth / 2, window.innerHeight * 0.7, 4);
+          }
+        }
+      }
+
+      this.acid.animationFrameId = requestAnimationFrame(animateFall);
+    };
+
+    this.acid.animationFrameId = requestAnimationFrame(animateFall);
+  },
+
+  spawnAcidWord() {
+    const sky = document.getElementById('acidSkyScreen');
+    if (!sky) return;
+
+    const allWords = this.getAllWords();
+    const wordText = allWords[Math.floor(Math.random() * allWords.length)];
+
+    // 15% 확률로 특수 파워업
+    const rand = Math.random();
+    let powerType = null;
+    let displayText = wordText;
+    if (rand < 0.05) {
+      powerType = 'freeze';
+      displayText = `❄️ ${wordText}`;
+    } else if (rand < 0.10) {
+      powerType = 'nuke';
+      displayText = `💣 ${wordText}`;
+    } else if (rand < 0.15) {
+      powerType = 'double';
+      displayText = `✨ ${wordText}`;
+    }
+
+    const wordEl = document.createElement('div');
+    wordEl.className = 'acid-word-drop';
+    if (powerType) wordEl.classList.add(`powerup-${powerType}`);
+    wordEl.textContent = displayText;
+
+    const xPos = 12 + Math.random() * 76;
+    wordEl.style.left = `${xPos}%`;
+    wordEl.style.top = `0px`;
+
+    sky.appendChild(wordEl);
+
+    this.acid.words.push({
+      text: wordText,
+      powerType,
+      el: wordEl,
+      y: 0
+    });
+  },
+
+  submitAcidWord() {
+    const input = document.getElementById('acidInput');
+    if (!input) return;
+    const typed = input.value.trim().toLowerCase();
+    if (!typed) return;
+
+    const matchIdx = this.acid.words.findIndex(w => {
+      const cleanW = w.text.replace(/['"`.,~!?]/g, '').toLowerCase();
+      return cleanW === typed;
+    });
+
+    if (matchIdx >= 0) {
+      const matched = this.acid.words[matchIdx];
+      const rect = matched.el.getBoundingClientRect();
+      VisualFX.spawnBurst(rect.left + rect.width / 2, rect.top + rect.height / 2, 20);
+      SoundFX.playWordCheck();
+
+      matched.el.remove();
+      this.acid.words.splice(matchIdx, 1);
+
+      this.acid.combo++;
+      const multiplier = (this.acid.isDouble ? 2 : 1) * (this.acid.combo >= 3 ? 1.5 : 1);
+      const earned = Math.round(100 * multiplier);
+      this.acid.playerScore += earned;
+      this.addScore(earned);
+
+      if (matched.powerType === 'freeze') {
+        this.acid.isFrozen = true;
+        SoundFX.playFanfare();
+        clearTimeout(this.acid.freezeTimeout);
+        this.acid.freezeTimeout = setTimeout(() => {
+          this.acid.isFrozen = false;
+        }, 4000);
+      } else if (matched.powerType === 'nuke') {
+        SoundFX.playFanfare();
+        VisualFX.spawnBurst(window.innerWidth / 2, window.innerHeight * 0.45, 50);
+        this.acid.words.forEach(w => w.el.remove());
+        const nukeBonus = this.acid.words.length * 80;
+        this.acid.playerScore += nukeBonus;
+        this.addScore(nukeBonus);
+        this.acid.words = [];
+      } else if (matched.powerType === 'double') {
+        this.acid.isDouble = true;
+        clearTimeout(this.acid.doubleTimeout);
+        this.acid.doubleTimeout = setTimeout(() => {
+          this.acid.isDouble = false;
+        }, 8000);
+      }
+
+      this.updateAcidScoreUI();
+      input.value = '';
+    } else {
+      SoundFX.playErrorThud();
+      input.classList.add('shake-error');
+      setTimeout(() => input.classList.remove('shake-error'), 400);
+    }
+  },
+
+  npcInterceptAcidWord() {
+    if (this.acid.words.length === 0) return;
+    const targetIdx = Math.floor(Math.random() * this.acid.words.length);
+    const target = this.acid.words[targetIdx];
+
+    const rect = target.el.getBoundingClientRect();
+    VisualFX.spawnHit(rect.left + rect.width / 2, rect.top + rect.height / 2, 6);
+
+    target.el.remove();
+    this.acid.words.splice(targetIdx, 1);
+    this.acid.npcScore += 80;
+    this.updateAcidScoreUI();
+  },
+
+  updateAcidScoreUI() {
+    const pScoreEl = document.getElementById('acidPlayerScore');
+    const nScoreEl = document.getElementById('acidNpcScore');
+    const comboEl = document.getElementById('acidPlayerCombo');
+    if (pScoreEl) pScoreEl.textContent = this.acid.playerScore.toLocaleString();
+    if (nScoreEl) nScoreEl.textContent = this.acid.npcScore.toLocaleString();
+    if (comboEl) comboEl.textContent = `${this.acid.combo} COMBO`;
+  },
+
+  // --------------------------------------------------------------------------
+  // GAME 3: 🏎️ 문장 질주 1:1 레이싱
+  // --------------------------------------------------------------------------
+  startRaceGame() {
+    this.race.active = true;
+    this.race.lap = 1;
+    this.race.maxLaps = 3;
+    this.race.playerScore = 0;
+    this.race.npcScore = 0;
+    this.startRaceLap();
+  },
+
+  startRaceLap() {
+    if (!this.race.active) return;
+    clearInterval(this.race.npcInterval);
+
+    this.race.playerProgress = 0;
+    this.race.npcProgress = 0;
+    this.updateRaceCars();
+
+    const lapBadge = document.getElementById('raceLapBadge');
+    if (lapBadge) lapBadge.textContent = `LAP ${this.race.lap} / ${this.race.maxLaps}`;
+
+    const pScore = document.getElementById('racePlayerScore');
+    const nScore = document.getElementById('raceNpcScore');
+    if (pScore) pScore.textContent = `${this.race.playerScore}점`;
+    if (nScore) nScore.textContent = `${this.race.npcScore}점`;
+
+    const sentences = this.getPracticeSentences();
+    const sentence = sentences[(this.race.lap - 1) % sentences.length];
+    this.race.currentSentence = sentence;
+    this.race.targetWords = sentence.split(/\s+/).filter(w => w.length > 0);
+    this.race.assembledWords = [];
+
+    const progressBox = document.getElementById('raceSentenceProgress');
+    if (progressBox) progressBox.innerHTML = '';
+
+    const shuffled = [...this.race.targetWords];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+
+    const choicesGrid = document.getElementById('raceWordChoices');
+    if (choicesGrid) {
+      choicesGrid.innerHTML = shuffled.map((w, idx) => `
+        <button class="btn-race-word" data-word="${App.escapeHtml(w)}">
+          ${App.escapeHtml(w)}
+        </button>
+      `).join('');
+
+      choicesGrid.querySelectorAll('.btn-race-word').forEach(btn => {
+        btn.addEventListener('click', () => {
+          this.handleRaceWordClick(btn);
+        });
+      });
+    }
+
+    // NPC 주행
+    const npcIntervalMs = this.difficulty === 'hard' ? 420 : 700;
+    const stepPct = 100 / Math.max(3, this.race.targetWords.length * 2.2);
+
+    this.race.npcInterval = setInterval(() => {
+      if (!this.race.active) return;
+      this.race.npcProgress = Math.min(100, this.race.npcProgress + stepPct);
+      this.updateRaceCars();
+
+      if (this.race.npcProgress >= 100) {
+        clearInterval(this.race.npcInterval);
+        this.race.npcScore += 150;
+        this.endRaceLap(false);
+      }
+    }, npcIntervalMs);
+  },
+
+  handleRaceWordClick(btn) {
+    if (!this.race.active) return;
+    const word = btn.dataset.word;
+    const expected = this.race.targetWords[this.race.assembledWords.length];
+
+    if (word === expected) {
+      btn.remove();
+      this.race.assembledWords.push(word);
+      SoundFX.playWordCheck();
+      VisualFX.spawnHit(btn.getBoundingClientRect().left + 30, btn.getBoundingClientRect().top + 10, 6);
+
+      const progressBox = document.getElementById('raceSentenceProgress');
+      if (progressBox) {
+        const chip = document.createElement('span');
+        chip.className = 'race-completed-chip';
+        chip.textContent = word;
+        progressBox.appendChild(chip);
+      }
+
+      this.race.playerProgress = (this.race.assembledWords.length / this.race.targetWords.length) * 100;
+      this.updateRaceCars();
+
+      if (this.race.playerProgress >= 100) {
+        clearInterval(this.race.npcInterval);
+        this.race.playerScore += 300;
+        this.addScore(300);
+        this.endRaceLap(true);
+      }
+    } else {
+      SoundFX.playErrorThud();
+      btn.classList.add('shake-error');
+      setTimeout(() => btn.classList.remove('shake-error'), 400);
+    }
+  },
+
+  updateRaceCars() {
+    const pCar = document.getElementById('playerCar');
+    const pFill = document.getElementById('playerTrackFill');
+    const nCar = document.getElementById('npcCar');
+    const nFill = document.getElementById('npcTrackFill');
+
+    const maxTravel = 85;
+    const pPos = 10 + (this.race.playerProgress / 100) * maxTravel;
+    const nPos = 10 + (this.race.npcProgress / 100) * maxTravel;
+
+    if (pCar) pCar.style.left = `${Math.min(92, pPos)}%`;
+    if (pFill) pFill.style.width = `${this.race.playerProgress}%`;
+    if (nCar) nCar.style.left = `${Math.min(92, nPos)}%`;
+    if (nFill) nFill.style.width = `${this.race.npcProgress}%`;
+  },
+
+  endRaceLap(playerWon) {
+    if (!this.race.active) return;
+    clearInterval(this.race.npcInterval);
+
+    if (playerWon) {
+      SoundFX.playFanfare();
+      VisualFX.spawnBurst(window.innerWidth / 2, window.innerHeight * 0.4, 30);
+    } else {
+      SoundFX.playErrorThud();
+    }
+
+    setTimeout(() => {
+      if (!this.race.active) return;
+      this.race.lap++;
+      if (this.race.lap > this.race.maxLaps) {
+        this.finishMiniGame('race');
+      } else {
+        this.startRaceLap();
+      }
+    }, 1400);
+  },
+
+  // --------------------------------------------------------------------------
+  // 공통 결과 창
+  // --------------------------------------------------------------------------
+  finishMiniGame(gameKey) {
+    this.stopAll();
+    SoundFX.playFanfare();
+    VisualFX.spawnBurst(window.innerWidth / 2, window.innerHeight * 0.4, 60);
+
+    const overlay = document.getElementById('minigameResultOverlay');
+    const trophy = document.getElementById('resultTrophyIcon');
+    const title = document.getElementById('resultTitleText');
+    const sub = document.getElementById('resultSubText');
+    const board = document.getElementById('resultStatsBoard');
+
+    if (overlay) overlay.classList.remove('hidden');
+
+    const high = (this.highScores[gameKey] && this.highScores[gameKey][this.difficulty]) || 0;
+    const isNewRecord = this.score > 0 && this.score >= high;
+
+    if (isNewRecord) {
+      if (trophy) trophy.textContent = '🌟';
+      if (title) title.textContent = '🎉 신기록 달성!';
+      if (sub) sub.innerHTML = `대단합니다! <strong style="color:var(--accent-gold)">${this.score}점</strong>으로 최고 기록을 갱신했습니다!`;
+    } else {
+      if (trophy) trophy.textContent = '🏆';
+      if (title) title.textContent = '게임 종료!';
+      if (sub) sub.innerHTML = `총 획득 점수: <strong style="color:var(--accent-cyan)">${this.score}점</strong> (최고 기록: ${high}점)`;
+    }
+
+    let boardHtml = '';
+    if (gameKey === 'bomb') {
+      const players = [
+        { name: '나 (Player)', score: this.bomb.scores[0], isPlayer: true },
+        { name: '냥냥박사', score: this.bomb.scores[1], isPlayer: false },
+        { name: '알파독', score: this.bomb.scores[2], isPlayer: false },
+        { name: '고스트', score: this.bomb.scores[3], isPlayer: false }
+      ].sort((a, b) => b.score - a.score);
+
+      const medals = ['🥇 1위', '🥈 2위', '🥉 3위', '4위'];
+      boardHtml = players.map((p, i) => `
+        <div class="result-rank-row ${p.isPlayer ? 'is-player' : ''}">
+          <span><span class="rank-medal">${medals[i]}</span>${p.name}</span>
+          <strong>${p.score}점</strong>
+        </div>
+      `).join('');
+    } else if (gameKey === 'acid') {
+      const pWon = this.acid.playerScore >= this.acid.npcScore;
+      boardHtml = `
+        <div class="result-rank-row ${pWon ? 'is-player' : ''}">
+          <span><span class="rank-medal">${pWon ? '🥇 승리' : '🥈 준우승'}</span>나 (Player)</span>
+          <strong>${this.acid.playerScore}점</strong>
+        </div>
+        <div class="result-rank-row ${!pWon ? 'is-player' : ''}">
+          <span><span class="rank-medal">${!pWon ? '🥇 승리' : '🥈 준우승'}</span>사이버 라이벌 (NPC)</span>
+          <strong>${this.acid.npcScore}점</strong>
+        </div>
+      `;
+    } else if (gameKey === 'race') {
+      const pWon = this.race.playerScore >= this.race.npcScore;
+      boardHtml = `
+        <div class="result-rank-row ${pWon ? 'is-player' : ''}">
+          <span><span class="rank-medal">${pWon ? '🥇 우승' : '🥈 준우승'}</span>나 (Player)</span>
+          <strong>${this.race.playerScore}점</strong>
+        </div>
+        <div class="result-rank-row ${!pWon ? 'is-player' : ''}">
+          <span><span class="rank-medal">${!pWon ? '🥇 우승' : '🥈 준우승'}</span>터보봇 (AI)</span>
+          <strong>${this.race.npcScore}점</strong>
+        </div>
+      `;
+    }
+
+    if (board) board.innerHTML = boardHtml;
+  }
+};
+
+
+// ============================================================================
 // 6. 메인 애플리케이션 코어 컨트롤러 (App)
 // ============================================================================
 const App = {
@@ -930,6 +1832,7 @@ const App = {
     SoundFX.init();
     VisualFX.init();
     SpeechEngine.init();
+    MiniGameEngine.init();
 
     this.applySettingsToUI();
     this.bindEvents();
@@ -1009,7 +1912,11 @@ const App = {
     document.querySelectorAll('.nav-tab').forEach(tab => {
       tab.addEventListener('click', () => {
         const mode = tab.dataset.mode;
-        this.setMode(mode === 'drill' ? 'drill' : (mode === '1.5' ? '1.5' : parseInt(mode, 10)));
+        if (mode === 'minigame') {
+          this.setMode('minigame');
+        } else {
+          this.setMode(mode === 'drill' ? 'drill' : (mode === '1.5' ? '1.5' : parseInt(mode, 10)));
+        }
       });
     });
 
@@ -1459,7 +2366,8 @@ const App = {
       '4': 'STAGE 4: 스노우볼 30% 조립',
       '5': 'STAGE 5: 타임어택 단어 나열',
       '6': 'STAGE 6: 말로 외우기 AI 코치',
-      'drill': '⚡ FINAL DRILL: 타임어택 백지 블라인드'
+      'drill': '⚡ FINAL DRILL: 타임어택 백지 블라인드',
+      'minigame': '🎮 ARCADE: NPC 실시간 미니게임 배틀'
     };
     document.getElementById('currentModeBadge').textContent = badgeMap[String(mode)] || '학습 모드';
 
@@ -1475,7 +2383,28 @@ const App = {
     else if (strMode === '6') document.getElementById('ctrlStep6').classList.remove('hidden');
     else if (strMode === 'drill') document.getElementById('ctrlDrill').classList.remove('hidden');
 
-    this.renderCardContent();
+    if (strMode === 'minigame') {
+      const practiceCard = document.getElementById('practiceCard');
+      if (practiceCard) practiceCard.classList.add('hidden');
+      const footerActions = document.querySelector('.card-footer-actions');
+      if (footerActions) footerActions.classList.add('hidden');
+      const shortcuts = document.querySelector('.shortcuts-legend');
+      if (shortcuts) shortcuts.classList.add('hidden');
+      const minigameWs = document.getElementById('minigameWorkspace');
+      if (minigameWs) minigameWs.classList.remove('hidden');
+      MiniGameEngine.start(MiniGameEngine.activeGame);
+    } else {
+      const practiceCard = document.getElementById('practiceCard');
+      if (practiceCard) practiceCard.classList.remove('hidden');
+      const footerActions = document.querySelector('.card-footer-actions');
+      if (footerActions) footerActions.classList.remove('hidden');
+      const shortcuts = document.querySelector('.shortcuts-legend');
+      if (shortcuts) shortcuts.classList.remove('hidden');
+      const minigameWs = document.getElementById('minigameWorkspace');
+      if (minigameWs) minigameWs.classList.add('hidden');
+      MiniGameEngine.stopAll();
+      this.renderCardContent();
+    }
   },
 
   getActiveSentences() {
@@ -1558,6 +2487,10 @@ const App = {
     this.stopTimer();
     SpeechEngine.stopSpeak();
     SpeechEngine.stopListen();
+
+    if (String(this.currentMode) === 'minigame') {
+      return;
+    }
 
     const curText = Store.getCurrentText();
     if (!curText || !curText.sentences || curText.sentences.length === 0) {
