@@ -230,6 +230,8 @@ body {
   opacity: 0;
   transform: scale(0.8);
   transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .combo-display.active {
@@ -241,6 +243,9 @@ body {
   font-size: 1.25rem;
   color: #fff;
   text-shadow: 0 0 10px #f59e0b;
+  white-space: nowrap;
+  display: inline-block;
+  line-height: 1.2;
 }
 
 /* 암기율 프로그레스 바 */
@@ -302,6 +307,7 @@ body {
   transition: var(--transition);
   user-select: none;
   font-size: 0.9rem;
+  white-space: nowrap;
 }
 
 .btn:active {
@@ -544,6 +550,8 @@ body {
   font-weight: 700;
   padding: 4px 10px;
   border-radius: 999px;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .counter-badge {
@@ -553,6 +561,8 @@ body {
   font-weight: 600;
   padding: 4px 10px;
   border-radius: 999px;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .weak-badge {
@@ -564,6 +574,8 @@ body {
   padding: 3px 8px;
   border-radius: 999px;
   animation: pulse-red 2s infinite;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 @keyframes pulse-red {
@@ -982,6 +994,12 @@ body {
 
 .nav-buttons {
   display: flex;
+  gap: 10px;
+}
+
+.mastery-actions {
+  display: flex;
+  align-items: center;
   gap: 10px;
 }
 
@@ -1464,34 +1482,355 @@ label {
   to { transform: scale(1); opacity: 1; }
 }
 
-/* 반응형 모바일 대응 */
+/* ==========================================================================
+   반응형 모바일 & 태블릿 최적화 (Mobile Responsive)
+   ========================================================================== */
 @media (max-width: 1024px) {
   .main-layout {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr !important;
+  }
+  .main-layout.sidebar-open {
+    grid-template-columns: 1fr !important;
   }
   .mastery-nav {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
   }
 }
 
-@media (max-width: 640px) {
+@media (max-width: 768px) {
+  .app-container {
+    padding: 10px 12px 28px;
+    gap: 12px;
+  }
+
   .app-header {
     flex-direction: column;
-    align-items: flex-start;
-    gap: 14px;
+    align-items: stretch;
+    gap: 10px;
+    padding: 12px;
   }
-  .header-left, .header-right {
+
+  .header-left {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
     width: 100%;
-    justify-content: space-between;
   }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .brand-title {
+    font-size: 1.15rem;
+    white-space: nowrap;
+  }
+
+  .text-selector-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    width: 100%;
+  }
+
+  .select-dropdown {
+    flex: 1;
+    min-width: 130px;
+    max-width: 100%;
+    font-size: 0.82rem;
+    padding: 6px 10px;
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    gap: 8px;
+  }
+
+  .combo-display {
+    padding: 4px 10px;
+    font-size: 0.85rem;
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+
+  .combo-count {
+    font-size: 1rem;
+    white-space: nowrap;
+  }
+
+  .mastery-summary {
+    flex: 1;
+    min-width: 100px;
+  }
+
+  .quick-settings {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+
+  .icon-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 0.9rem;
+  }
+
+  /* 8대 스테이지 네비게이션: 모바일 스와이프 캡슐 바 */
   .mastery-nav {
-    grid-template-columns: repeat(2, 1fr);
+    display: flex;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    gap: 8px;
+    padding: 4px 2px 8px 2px;
+    scrollbar-width: none;
+  }
+  .mastery-nav::-webkit-scrollbar {
+    display: none;
+  }
+  .nav-tab {
+    flex: 0 0 auto;
+    min-width: 105px;
+    padding: 8px 10px;
+    border-radius: var(--radius-sm);
+  }
+  .tab-step {
+    font-size: 0.68rem;
+    letter-spacing: 0.5px;
+  }
+  .tab-title {
+    font-size: 0.8rem;
+    white-space: nowrap;
+    font-weight: 800;
   }
   .tab-desc {
     display: none;
   }
+
+  /* 스테이지 인포 바 */
+  .stage-info-bar {
+    padding: 8px 12px;
+    gap: 8px;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .stage-badge-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    width: 100%;
+  }
+  .mode-badge, .counter-badge, .weak-badge {
+    font-size: 0.72rem;
+    padding: 3px 8px;
+    white-space: nowrap;
+  }
+  .mode-sub-controls {
+    width: 100%;
+  }
+  .sub-ctrl-panel {
+    width: 100%;
+    flex-wrap: wrap;
+    gap: 6px;
+    font-size: 0.8rem;
+  }
+  .fading-buttons {
+    display: flex;
+    gap: 4px;
+    width: 100%;
+  }
+  .btn-fade {
+    flex: 1;
+    padding: 6px 4px;
+    font-size: 0.75rem;
+    text-align: center;
+  }
+
+  /* 메인 학습 카드 */
+  .practice-card {
+    padding: 16px 12px;
+    min-height: 180px;
+    border-radius: var(--radius-md);
+  }
+  .card-top-actions {
+    position: static;
+    display: flex;
+    justify-content: flex-end;
+    gap: 6px;
+    margin-bottom: 6px;
+  }
+  .action-circle-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 0.95rem;
+  }
+  .main-sentence-text {
+    font-size: calc(1.15rem * var(--font-scale)) !important;
+    line-height: 1.6;
+    word-break: keep-all;
+    overflow-wrap: break-word;
+  }
+
+  /* 하단 카드 액션 바 (모바일 친화 엄지 터치 배치) */
+  .card-footer-actions {
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 8px;
+    width: 100%;
+  }
+  .mastery-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+  }
+  #btnMarkMemorized {
+    width: 100%;
+    padding: 13px 14px;
+    font-size: 1rem;
+    order: 1;
+  }
+  #btnDontKnow {
+    width: 100%;
+    padding: 11px 14px;
+    font-size: 0.9rem;
+    order: 2;
+  }
+  .nav-buttons {
+    width: 100%;
+    display: flex;
+    gap: 8px;
+  }
+  .nav-buttons .btn {
+    flex: 1;
+    padding: 10px 8px;
+    font-size: 0.85rem;
+    justify-content: center;
+  }
+  .shortcuts-legend {
+    display: none;
+  }
+
+  /* STAGE 1.5 슬라이더 모바일 */
+  .slider-line-item {
+    padding: 10px 12px;
+    gap: 8px;
+  }
+  .slider-text-box {
+    min-height: 42px;
+    padding: 8px 10px;
+  }
+  .slider-text-layer {
+    font-size: calc(1rem * var(--font-scale));
+    line-height: 1.5;
+  }
+  .slider-control-row {
+    gap: 6px;
+    font-size: 0.8rem;
+  }
+  .mask-range-slider::-webkit-slider-thumb {
+    width: 28px;
+    height: 28px;
+  }
+
+  /* STAGE 3 초성 락커 모바일 */
+  .chosung-chips-grid {
+    gap: 6px;
+    padding: 10px 8px;
+    min-height: 70px;
+  }
+  .chosung-word-chip {
+    padding: 6px 12px;
+    font-size: 0.95rem;
+  }
+  .chosung-input-panel {
+    flex-direction: column;
+    width: 100%;
+    gap: 8px;
+    padding: 10px;
+  }
+  .chosung-word-input {
+    width: 100%;
+    font-size: 0.95rem;
+    padding: 10px;
+  }
+  #btnSubmitChosungWord {
+    width: 100%;
+    padding: 10px;
+    font-size: 0.95rem;
+  }
+
+  /* STAGE 4 스노우볼 모바일 */
+  .snowball-slots-box {
+    padding: 12px 10px;
+    gap: 6px;
+    line-height: 2;
+  }
+  .snowball-chip-hint {
+    padding: 4px 8px;
+    font-size: 0.95rem;
+  }
+  .snowball-slot-input {
+    min-width: 64px;
+    max-width: 110px;
+    padding: 4px 6px;
+    font-size: 0.95rem;
+  }
+  #btnCheckSnowball {
+    width: 100%;
+    padding: 12px;
+    font-size: 1rem;
+  }
+
+  /* STAGE 5 / DRILL 단어 나열 모바일 */
+  .scramble-tray-box, .scramble-bank-box {
+    padding: 10px 12px;
+  }
+  .scramble-tray {
+    min-height: 44px;
+    padding: 6px;
+    gap: 6px;
+  }
+  .scramble-bank {
+    gap: 6px;
+  }
+  .word-pill {
+    padding: 6px 12px;
+    font-size: 0.88rem;
+  }
+
+  /* STAGE 6 음성 코치 모바일 */
+  .btn-mic-lg {
+    width: 100%;
+    padding: 12px 16px;
+    font-size: 0.95rem;
+    justify-content: center;
+  }
+  .voice-transcript-box {
+    padding: 12px 14px;
+  }
+  .live-transcript {
+    font-size: calc(1.05rem * var(--font-scale));
+  }
+
+  /* 모바일 모달 */
+  .modal-box {
+    width: 95%;
+    max-width: 95vw;
+    margin: 8px;
+    max-height: 90vh;
+  }
+  .modal-body {
+    padding: 14px;
+  }
   .form-row {
     flex-direction: column;
+    gap: 8px;
   }
 }
 
