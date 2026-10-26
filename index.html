@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>암기의 신 (Memory God) - 장문 완벽 암기 솔루션</title>
+  <meta name="description" content="뇌과학 기반 5단계 점진적 인출 훈련으로 영어 연설, 시험 서술형, 발표 대본, 법조문 등 긴 글을 100% 확실하게 외우게 해주는 최강의 암기 프로그램">
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+</head>
+<body class="theme-dark">
+  <canvas id="particleCanvas"></canvas>
+  <div id="app" class="app-container">
+    <!-- 상단 글로벌 네비게이션 바 -->
+    <header class="app-header">
+      <div class="header-left">
+        <div class="brand">
+          <span class="brand-icon">🧠</span>
+          <div class="brand-text">
+            <h1 class="brand-title">암기의 신 <span class="badge">Master</span></h1>
+            <p class="brand-subtitle">뇌과학 기반 장문 완벽 암기 솔루션</p>
+          </div>
+        </div>
+
+        <div class="text-selector-wrap">
+          <select id="textSelect" class="select-dropdown" title="암기할 지문 선택">
+            <!-- JS로 샘플 및 사용자 등록 지문 채움 -->
+          </select>
+          <button id="btnOpenAddModal" class="btn btn-primary btn-sm">
+            <span>➕</span> 새 지문 추가
+          </button>
+          <button id="btnOpenManageModal" class="btn btn-secondary btn-sm" title="지문 관리/편집">
+            <span>⚙️</span> 지문 관리
+          </button>
+        </div>
+      </div>
+
+      <div class="header-right">
+        <!-- 타격감 콤보 배너 -->
+        <div id="comboBanner" class="combo-display">
+          <span class="combo-fire">🔥</span>
+          <span id="comboText" class="combo-count">0 COMBO</span>
+        </div>
+
+        <!-- 학습 진행도 요약 -->
+        <div class="mastery-summary" title="현재 지문 전체 암기 마스터율">
+          <div class="summary-label">
+            <span>완벽 암기율</span>
+            <strong id="masteryRateText">0%</strong>
+          </div>
+          <div class="progress-bar-bg">
+            <div id="masteryProgressBar" class="progress-bar-fill" style="width: 0%"></div>
+          </div>
+        </div>
+
+        <!-- 설정 툴바 -->
+        <div class="quick-settings">
+          <button id="btnSoundToggle" class="icon-btn active" title="효과음 On/Off">
+            <span id="soundIcon">🔊</span>
+          </button>
+          <button id="btnPunctuationToggle" class="icon-btn active" title="구두점 유연 모드 (체크 시 기호/띄어쓰기 오차 허용)">
+            <span id="punctIcon">✨</span>
+          </button>
+          <button id="btnFontSize" class="icon-btn" title="글자 크기 변경">
+            <span>🔠</span>
+          </button>
+          <button id="btnThemeToggle" class="icon-btn" title="다크/라이트 모드 전환">
+            <span id="themeIcon">🌙</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- 5단계 과학적 마스터리 탭 바 -->
+    <nav class="mastery-nav">
+      <button class="nav-tab active" data-mode="1">
+        <span class="tab-step">STEP 1</span>
+        <span class="tab-title">🎧 낭독 & 쉐도잉</span>
+        <span class="tab-desc">전체 흐름 & 소리 각인</span>
+      </button>
+      <button class="nav-tab" data-mode="2">
+        <span class="tab-step">STEP 2</span>
+        <span class="tab-title">🧩 점진적 빈칸</span>
+        <span class="tab-desc">20% → 80% 빈칸 뚫기</span>
+      </button>
+      <button class="nav-tab" data-mode="3">
+        <span class="tab-step">STEP 3</span>
+        <span class="tab-title">💡 초성 / 첫글자</span>
+        <span class="tab-desc">인출 단서 기억 훈련</span>
+      </button>
+      <button class="nav-tab" data-mode="4">
+        <span class="tab-step">STEP 4</span>
+        <span class="tab-title">🔗 누적 체이닝</span>
+        <span class="tab-desc">배우 대본식 연속 암기</span>
+      </button>
+      <button class="nav-tab" data-mode="5">
+        <span class="tab-step">STEP 5</span>
+        <span class="tab-title">⌨️ 고스트 타자</span>
+        <span class="tab-desc">완벽 백지 실시간 인출</span>
+      </button>
+      <button class="nav-tab nav-tab-drill" data-mode="drill">
+        <span class="tab-step">DRILL</span>
+        <span class="tab-title">🔥 오답 무한 드릴</span>
+        <span class="tab-desc">취약 문장 100% 정복</span>
+      </button>
+    </nav>
+
+    <!-- 메인 워크스페이스 그리드 -->
+    <main class="main-layout">
+      <!-- 좌측: 핵심 훈련 스테이지 -->
+      <section class="learning-stage">
+        <!-- 현재 단계 안내 바 -->
+        <div class="stage-info-bar">
+          <div class="stage-badge-group">
+            <span id="currentModeBadge" class="mode-badge">1단계: 낭독 & 쉐도잉</span>
+            <span id="sentenceCounter" class="counter-badge">문장 1 / 7</span>
+            <span id="weaknessBadge" class="weak-badge hidden">⚠️ 취약 문장</span>
+          </div>
+
+          <!-- 모드별 전용 서브 컨트롤 -->
+          <div id="modeControls" class="mode-sub-controls">
+            <!-- 1단계: TTS 속도 조절 -->
+            <div id="ctrlStep1" class="sub-ctrl-panel">
+              <label>낭독 속도:</label>
+              <select id="ttsRateSelect" class="select-dropdown-sm">
+                <option value="0.7">0.7x (느리게)</option>
+                <option value="0.85">0.85x (학습용)</option>
+                <option value="1.0" selected>1.0x (보통)</option>
+                <option value="1.2">1.2x (빠르게)</option>
+              </select>
+              <button id="btnPlayFullTTS" class="btn btn-secondary btn-sm" title="지문 전체 연속 재생">
+                ▶ 지문 전체 듣기
+              </button>
+            </div>
+
+            <!-- 2단계: 빈칸 은닉률 조절 -->
+            <div id="ctrlStep2" class="sub-ctrl-panel hidden">
+              <label>빈칸 난이도:</label>
+              <div class="fading-buttons">
+                <button class="btn-fade active" data-level="25">25% (쉬움)</button>
+                <button class="btn-fade" data-level="50">50% (보통)</button>
+                <button class="btn-fade" data-level="75">75% (어려움)</button>
+                <button class="btn-fade" data-level="100">100% (백지)</button>
+              </div>
+            </div>
+
+            <!-- 3단계: 초성 힌트 옵션 -->
+            <div id="ctrlStep3" class="sub-ctrl-panel hidden">
+              <label>단서 유형:</label>
+              <button id="btnToggleChosungType" class="btn btn-secondary btn-sm">
+                <span id="chosungTypeLabel">초성/첫글자 + 길이</span>
+              </button>
+            </div>
+
+            <!-- 4단계: 체이닝 범위 안내 -->
+            <div id="ctrlStep4" class="sub-ctrl-panel hidden">
+              <span id="chainingRangeText" class="chain-info-text">누적 구간: 1번 ~ 1번 문장</span>
+            </div>
+
+            <!-- 5단계: 타자 / 마이크 모드 -->
+            <div id="ctrlStep5" class="sub-ctrl-panel hidden">
+              <div class="toggle-group">
+                <button id="btnTypeModeKey" class="btn-toggle active">⌨️ 키보드 타자</button>
+                <button id="btnTypeModeVoice" class="btn-toggle">🎙️ 음성 구술 (STT)</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 인터랙티브 학습 카드 컨테이너 -->
+        <div class="card-workspace">
+          <!-- 카드 상단: 맥락/이전 문장 힌트 (체이닝 모드 등) -->
+          <div id="contextPreviewBox" class="context-preview hidden"></div>
+
+          <!-- 메인 문장 카드 -->
+          <div class="practice-card" id="practiceCard">
+            <!-- 카드 헤더: 음성 재생 버튼 & 북마크 -->
+            <div class="card-top-actions">
+              <button id="btnSpeakCurrent" class="action-circle-btn" title="이 문장 음성 듣기">
+                <span>🔊</span>
+              </button>
+              <button id="btnToggleWeakness" class="action-circle-btn" title="취약 문장 지정/해제">
+                <span id="starIcon">⭐</span>
+              </button>
+            </div>
+
+            <!-- 텍스트 디스플레이 영역 (모드에 따라 동적 변환) -->
+            <div class="text-display-box" id="textDisplayBox">
+              <p id="targetDisplayText" class="main-sentence-text">
+                문장을 불러오는 중입니다...
+              </p>
+            </div>
+
+            <!-- 5단계 고스트 타자 / 빈칸 타이핑 입력창 -->
+            <div id="typingArea" class="typing-container hidden">
+              <div class="ghost-guide-text" id="ghostGuide"></div>
+              <textarea id="typingInput" class="typing-textarea" placeholder="머릿속으로 떠올려 타이핑해보세요... (틀리면 즉시 표시됩니다)" rows="3" spellcheck="false" autocomplete="off"></textarea>
+              <div class="typing-stats">
+                <span>정확도: <strong id="typingAccuracy">100%</strong></span>
+                <span>타자 속도: <strong id="typingSpeed">0 WPM</strong></span>
+                <span>오타 수: <strong id="typingErrors">0</strong></span>
+              </div>
+            </div>
+
+            <!-- 음성 인식 구술 모드 UI -->
+            <div id="voiceArea" class="voice-container hidden">
+              <button id="btnStartVoiceRec" class="btn btn-mic">
+                <span class="mic-icon">🎙️</span>
+                <span id="voiceRecStatus">마이크 누르고 문장 말하기</span>
+              </button>
+              <p id="voiceResultPreview" class="voice-result">음성을 듣고 있습니다...</p>
+            </div>
+
+            <!-- 원문 확인 토글 영역 (2, 3, 4단계용) -->
+            <div id="revealArea" class="reveal-container hidden">
+              <div id="revealedOriginalText" class="revealed-box hidden">
+                <span class="reveal-tag">정답 원문:</span>
+                <p id="revealedTextContent"></p>
+              </div>
+              <button id="btnToggleReveal" class="btn btn-outline">
+                <span id="revealBtnLabel">👁️ 원문 정답 확인 (Space)</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 하단 카드 제어 액션 바 -->
+          <div class="card-footer-actions">
+            <div class="nav-buttons">
+              <button id="btnPrevSentence" class="btn btn-secondary" title="이전 문장 (← 키)">
+                <span>◀</span> 이전 문장
+              </button>
+              <button id="btnNextSentence" class="btn btn-secondary" title="다음 문장 (→ 키)">
+                다음 문장 <span>▶</span>
+              </button>
+            </div>
+
+            <div class="mastery-actions">
+              <button id="btnMarkMemorized" class="btn btn-success btn-lg" title="외움 완료 (Enter 키)">
+                <span>✅</span> 완벽히 외웠음!
+              </button>
+            </div>
+          </div>
+
+          <!-- 단축키 안내 바 -->
+          <div class="shortcuts-legend">
+            <span>단축키: </span>
+            <kbd>Space</kbd> 정답 확인 / 오디오
+            <kbd>Enter</kbd> 외움 완료
+            <kbd>←</kbd> <kbd>→</kbd> 문장 이동
+            <kbd>1~5</kbd> 모드 전환
+          </div>
+        </div>
+      </section>
+
+      <!-- 우측: 전체 문장 파이프라인 & 마스터리 현황 사이드바 -->
+      <aside class="sidebar-overview">
+        <div class="sidebar-header">
+          <div class="sidebar-title-group">
+            <h2 class="sidebar-title">문장 전체 목록</h2>
+            <span id="sidebarCountBadge" class="sidebar-count">0 / 0</span>
+          </div>
+          <button id="btnResetProgress" class="btn btn-text-danger btn-xs" title="현재 지문 학습 상태 초기화">
+            초기화
+          </button>
+        </div>
+
+        <div class="sidebar-filter-tabs">
+          <button class="filter-chip active" data-filter="all">전체</button>
+          <button class="filter-chip" data-filter="unmastered">학습중</button>
+          <button class="filter-chip" data-filter="weak">취약 문장 🔥</button>
+          <button class="filter-chip" data-filter="mastered">외움 ✅</button>
+        </div>
+
+        <!-- 문장 리스트 스크롤 영역 -->
+        <div id="sentenceListContainer" class="sentence-list-scroll">
+          <!-- JS로 동적 생성 -->
+        </div>
+
+        <!-- 하단 에빙하우스 복습 타이머 가이드 -->
+        <div class="ebbinghaus-card">
+          <div class="ebbinghaus-header">
+            <span>⏱️ 뇌과학 망각방지 복습 알림</span>
+          </div>
+          <p class="ebbinghaus-tip">
+            장문은 외운 직후 <strong>10분 뒤, 1일 뒤, 3일 뒤</strong> 복습할 때 영구 기억(장기기억)으로 보존됩니다.
+          </p>
+        </div>
+      </aside>
+    </main>
+
+    <!-- 모달: 새 지문 추가 -->
+    <div id="modalAddText" class="modal-overlay hidden">
+      <div class="modal-box modal-lg">
+        <div class="modal-header">
+          <h3>➕ 새 암기 지문 등록하기</h3>
+          <button class="modal-close" data-close="modalAddText">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="inputTitle">지문 제목 <span class="required">*</span></label>
+            <input type="text" id="inputTitle" class="form-control" placeholder="예: 스티브 잡스 연설, 영어 수행평가 본문, 헌법 제1조 등">
+          </div>
+
+          <div class="form-row">
+            <div class="form-group flex-1">
+              <label for="inputCategory">카테고리</label>
+              <input type="text" id="inputCategory" class="form-control" placeholder="예: 영어, 시험, 발표, 명문">
+            </div>
+            <div class="form-group flex-1">
+              <label for="inputLanguage">언어 선택 (TTS 발음용)</label>
+              <select id="inputLanguage" class="form-control">
+                <option value="ko-KR">한국어 (ko-KR)</option>
+                <option value="en-US">영어 (en-US)</option>
+              </select>
+            </div>
+            <div class="form-group flex-1">
+              <label for="splitMethod">문장 분할 기준</label>
+              <select id="splitMethod" class="form-control">
+                <option value="smart">지능형 자동 (마침표 + 줄바꿈)</option>
+                <option value="newline">줄바꿈(엔터) 단위</option>
+                <option value="period">마침표(.) 단위</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="inputContent">본문 내용 (긴 글 붙여넣기) <span class="required">*</span></label>
+            <textarea id="inputContent" class="form-control" rows="8" placeholder="외우고 싶은 장문 전체를 그대로 붙여넣으세요..."></textarea>
+          </div>
+
+          <div class="form-group">
+            <div class="preview-header">
+              <label>문장 자동 분할 미리보기 (<span id="previewCount">0</span>문장)</label>
+              <span class="preview-hint">등록 후에도 각 문장을 자유롭게 수정/합치기 할 수 있습니다.</span>
+            </div>
+            <div id="splitPreviewList" class="split-preview-box">
+              <p class="empty-tip">본문을 입력하면 문장이 자동으로 나누어져 표시됩니다.</p>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" data-close="modalAddText">취소</button>
+          <button id="btnSaveNewText" class="btn btn-primary">지문 등록 및 암기 시작</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 모달: 지문 관리 및 편집 -->
+    <div id="modalManageText" class="modal-overlay hidden">
+      <div class="modal-box modal-lg">
+        <div class="modal-header">
+          <h3>⚙️ 지문 관리 및 문장 편집</h3>
+          <button class="modal-close" data-close="modalManageText">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="manage-text-list" id="manageTextList">
+            <!-- 사용자 저장 지문 목록 표시 -->
+          </div>
+          <div class="backup-restore-group">
+            <h4>데이터 백업 & 복원</h4>
+            <div class="btn-group">
+              <button id="btnExportData" class="btn btn-secondary btn-sm">📁 전체 데이터 JSON 내보내기</button>
+              <button id="btnImportDataTrigger" class="btn btn-secondary btn-sm">📥 JSON 파일 가져오기</button>
+              <input type="file" id="importFileInput" accept=".json" class="hidden">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" data-close="modalManageText">닫기</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 모달: 축하 팡파레 (100% 완료 시) -->
+    <div id="modalCongratulation" class="modal-overlay hidden">
+      <div class="modal-box modal-congrat">
+        <canvas id="confettiCanvas" class="confetti-canvas"></canvas>
+        <div class="congrat-content">
+          <div class="congrat-badge">👑 PERFECT MASTER 👑</div>
+          <h2 class="congrat-title">장문 암기 100% 완전 정복!</h2>
+          <p id="congratTextTitle" class="congrat-subtitle">지문 제목</p>
+          <div class="congrat-stats-grid">
+            <div class="stat-item">
+              <span class="stat-num" id="congratTotalCount">0</span>
+              <span class="stat-label">완벽 암기 문장</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-num" id="congratMasteryRate">100%</span>
+              <span class="stat-label">정복율</span>
+            </div>
+          </div>
+          <p class="congrat-message">
+            축하합니다! 뇌과학 5단계 인출 훈련을 통해 장기기억 고정화에 성공했습니다.<br>
+            내일 한 번 더 복습하시면 평생 잊지 않는 기억이 됩니다!
+          </p>
+          <div class="modal-footer justify-center">
+            <button class="btn btn-primary btn-lg" data-close="modalCongratulation">
+              멋집니다! 계속하기
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 샘플 데이터 로드 -->
+  <script src="data/samples.js"></script>
+  <!-- 메인 애플리케이션 스크립트 -->
+  <script src="app.js"></script>
+</body>
+</html>
