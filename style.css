@@ -767,7 +767,7 @@ body {
 }
 
 /* ==========================================================================
-   5단계: 고스트 타자 (타격감 극대화 UI)
+   5단계: 완전 블라인드 타자 (정답 완전 감춤 & 오답 경고 배너)
    ========================================================================== */
 .typing-container {
   display: flex;
@@ -777,54 +777,50 @@ body {
   margin-top: 14px;
 }
 
-.ghost-guide-text {
-  font-size: calc(1.2rem * var(--font-scale));
-  font-weight: 700;
-  line-height: 1.7;
-  text-align: left;
-  min-height: 48px;
-  padding: 12px 16px;
-  background: rgba(0, 0, 0, 0.35);
-  border-radius: var(--radius-md);
+.blind-result-box {
+  background: rgba(0, 0, 0, 0.45);
   border: 1px solid var(--border-color);
-  letter-spacing: -0.2px;
+  border-radius: var(--radius-md);
+  padding: 14px 18px;
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 72px;
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.5);
 }
 
-.ghost-char-correct {
+.blind-status-tag {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--accent-cyan);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.blind-typed-view {
+  font-size: calc(1.25rem * var(--font-scale));
+  font-weight: 700;
+  line-height: 1.6;
+  min-height: 36px;
+  word-break: keep-all;
+}
+
+.blind-placeholder {
+  color: var(--text-dim);
+  font-size: 0.95rem;
+  font-style: italic;
+  font-weight: 400;
+}
+
+.blind-char-correct {
   color: #34d399;
-  text-shadow: 0 0 10px rgba(52, 211, 153, 0.6);
+  text-shadow: 0 0 12px rgba(52, 211, 153, 0.8);
   font-weight: 800;
-  transform: scale(1.05);
   display: inline-block;
-  animation: pop-char 0.15s ease-out;
+  animation: pop-char 0.12s ease-out;
 }
 
-@keyframes pop-char {
-  0% { transform: scale(0.8); opacity: 0.5; }
-  50% { transform: scale(1.25); }
-  100% { transform: scale(1.05); opacity: 1; }
-}
-
-.ghost-char-wrong {
-  color: #f87171;
-  background: rgba(239, 68, 68, 0.25);
-  border-radius: 4px;
-  text-decoration: underline;
-  padding: 0 2px;
-  font-weight: 800;
-  animation: shake-tiny 0.2s ease-in-out;
-}
-
-@keyframes shake-tiny {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-3px); }
-  75% { transform: translateX(3px); }
-}
-
-.ghost-char-cursor {
+.blind-char-cursor {
   display: inline-block;
   width: 2px;
   height: 1.2em;
@@ -832,16 +828,27 @@ body {
   vertical-align: middle;
   animation: cursor-blink 0.8s infinite;
   box-shadow: 0 0 8px var(--accent-cyan-glow);
+  margin-left: 2px;
 }
 
-@keyframes cursor-blink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0; }
+/* 실시간 오답 경고 배너 */
+.error-alert-banner {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.25), rgba(185, 28, 28, 0.35));
+  border: 1px solid rgba(239, 68, 68, 0.6);
+  border-radius: var(--radius-md);
+  padding: 10px 16px;
+  color: #fca5a5;
+  font-size: 0.92rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  animation: shake-tiny 0.25s ease-out;
+  box-shadow: 0 0 18px rgba(239, 68, 68, 0.3);
 }
 
-.ghost-char-pending {
-  color: var(--text-dim);
-  opacity: 0.4;
+.error-alert-banner .error-icon {
+  font-size: 1.2rem;
 }
 
 .typing-textarea {

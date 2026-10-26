@@ -1,5 +1,5 @@
 /**
- * 암기의 신 (Memory God) - 타격감 넘치는 장문 완벽 암기 엔진
+ * 암기의 신 (Memory God) - 타격감 넘치는 고난도 장문 완벽 암기 엔진 PRO
  */
 
 // ============================================================================
@@ -26,7 +26,7 @@ const SoundFX = {
     return this.enabled;
   },
 
-  // 찰진 기계식 키보드 타건음 (단일 글자 입력 시)
+  // 찰진 기계식 키보드 타건음
   playKeyClick() {
     if (!this.enabled) return;
     this.init();
@@ -34,8 +34,8 @@ const SoundFX = {
 
     const t = this.ctx.currentTime;
     
-    // 노이즈 버스트 (찰칵 소리)
-    const bufferSize = this.ctx.sampleRate * 0.015;
+    // 찰칵 스냅 노이즈
+    const bufferSize = Math.floor(this.ctx.sampleRate * 0.012);
     const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
     const data = buffer.getChannelData(0);
     for (let i = 0; i < bufferSize; i++) {
@@ -46,23 +46,23 @@ const SoundFX = {
 
     const noiseFilter = this.ctx.createBiquadFilter();
     noiseFilter.type = 'highpass';
-    noiseFilter.frequency.setValueAtTime(1400, t);
+    noiseFilter.frequency.setValueAtTime(1600, t);
 
     const noiseGain = this.ctx.createGain();
     noiseGain.gain.setValueAtTime(0.12, t);
-    noiseGain.gain.exponentialRampToValueAtTime(0.001, t + 0.02);
+    noiseGain.gain.exponentialRampToValueAtTime(0.001, t + 0.018);
 
     noise.connect(noiseFilter);
     noiseFilter.connect(noiseGain);
     noiseGain.connect(this.ctx.destination);
     noise.start(t);
 
-    // 가벼운 바디 틱
+    // 바디 틱
     const osc = this.ctx.createOscillator();
     const oscGain = this.ctx.createGain();
     osc.type = 'triangle';
-    osc.frequency.setValueAtTime(320 + Math.random() * 80, t);
-    osc.frequency.exponentialRampToValueAtTime(80, t + 0.02);
+    osc.frequency.setValueAtTime(340 + Math.random() * 60, t);
+    osc.frequency.exponentialRampToValueAtTime(90, t + 0.02);
 
     oscGain.gain.setValueAtTime(0.08, t);
     oscGain.gain.exponentialRampToValueAtTime(0.001, t + 0.02);
@@ -80,13 +80,13 @@ const SoundFX = {
     if (!this.ctx) return;
 
     const t = this.ctx.currentTime;
-    const pitchOffset = Math.min(combo * 18, 240);
+    const pitchOffset = Math.min(combo * 16, 260);
 
     // 1. 묵직한 펀치 킥
     const oscKick = this.ctx.createOscillator();
     const gainKick = this.ctx.createGain();
     oscKick.type = 'sine';
-    oscKick.frequency.setValueAtTime(220 + pitchOffset, t);
+    oscKick.frequency.setValueAtTime(240 + pitchOffset, t);
     oscKick.frequency.exponentialRampToValueAtTime(45, t + 0.09);
 
     gainKick.gain.setValueAtTime(0.35, t);
@@ -101,8 +101,8 @@ const SoundFX = {
     const oscSnap = this.ctx.createOscillator();
     const gainSnap = this.ctx.createGain();
     oscSnap.type = 'triangle';
-    oscSnap.frequency.setValueAtTime(850 + pitchOffset, t);
-    oscSnap.frequency.exponentialRampToValueAtTime(200, t + 0.06);
+    oscSnap.frequency.setValueAtTime(900 + pitchOffset, t);
+    oscSnap.frequency.exponentialRampToValueAtTime(220, t + 0.06);
 
     gainSnap.gain.setValueAtTime(0.2, t);
     gainSnap.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
@@ -127,18 +127,18 @@ const SoundFX = {
     const gain = this.ctx.createGain();
     osc.type = 'sine';
     osc.frequency.setValueAtTime(freq, t);
-    osc.frequency.exponentialRampToValueAtTime(freq * 1.5, t + 0.12);
+    osc.frequency.exponentialRampToValueAtTime(freq * 1.4, t + 0.12);
 
     gain.gain.setValueAtTime(0.22, t);
-    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.14);
 
     osc.connect(gain);
     gain.connect(this.ctx.destination);
     osc.start(t);
-    osc.stop(t + 0.16);
+    osc.stop(t + 0.15);
   },
 
-  // 문장 격파 사운드 (크리티컬 폭발 💥 + 승리 코드)
+  // 문장 격파 사운드 (크리티컬 폭발 💥)
   playSentenceMastered() {
     if (!this.enabled) return;
     this.init();
@@ -150,7 +150,7 @@ const SoundFX = {
     const oscBoom = this.ctx.createOscillator();
     const gainBoom = this.ctx.createGain();
     oscBoom.type = 'triangle';
-    oscBoom.frequency.setValueAtTime(180, t);
+    oscBoom.frequency.setValueAtTime(200, t);
     oscBoom.frequency.exponentialRampToValueAtTime(30, t + 0.35);
 
     gainBoom.gain.setValueAtTime(0.5, t);
@@ -161,7 +161,7 @@ const SoundFX = {
     oscBoom.start(t);
     oscBoom.stop(t + 0.36);
 
-    // 반짝이는 챠임 아르페지오 (C5 - E5 - G5 - C6)
+    // 반짝이는 챠임 (C5 - E5 - G5 - C6)
     const notes = [523.25, 659.25, 783.99, 1046.50];
     notes.forEach((freq, idx) => {
       const osc = this.ctx.createOscillator();
@@ -182,6 +182,29 @@ const SoundFX = {
     });
   },
 
+  // 스테이지 클리어 팡파레 (스텝 완료 시)
+  playStageClear() {
+    if (!this.enabled) return;
+    this.init();
+    if (!this.ctx) return;
+
+    const t = this.ctx.currentTime;
+    const chords = [523.25, 659.25, 783.99, 1046.50, 1318.51];
+    chords.forEach((freq, i) => {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      const st = t + i * 0.08;
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, st);
+      gain.gain.setValueAtTime(0.3, st);
+      gain.gain.exponentialRampToValueAtTime(0.001, st + 0.4);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(st);
+      osc.stop(st + 0.42);
+    });
+  },
+
   // 오답 퍽! 둔탁한 타격음
   playErrorThud() {
     if (!this.enabled) return;
@@ -193,19 +216,19 @@ const SoundFX = {
     const gain = this.ctx.createGain();
 
     osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(120, t);
-    osc.frequency.linearRampToValueAtTime(50, t + 0.15);
+    osc.frequency.setValueAtTime(130, t);
+    osc.frequency.linearRampToValueAtTime(45, t + 0.16);
 
-    gain.gain.setValueAtTime(0.25, t);
-    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
+    gain.gain.setValueAtTime(0.3, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.16);
 
     osc.connect(gain);
     gain.connect(this.ctx.destination);
     osc.start(t);
-    osc.stop(t + 0.16);
+    osc.stop(t + 0.17);
   },
 
-  // 100% 완전 정복 팡파레
+  // 100% 완전 정복 그랜드 팡파레
   playFanfare() {
     if (!this.enabled) return;
     this.init();
@@ -217,7 +240,7 @@ const SoundFX = {
       { f: 783.99, d: 0.15, offset: 0.3 },
       { f: 1046.5, d: 0.45, offset: 0.45 },
       { f: 880.00, d: 0.2, offset: 0.95 },
-      { f: 1046.5, d: 0.7, offset: 1.15 }
+      { f: 1046.5, d: 0.8, offset: 1.15 }
     ];
 
     const t = this.ctx.currentTime;
@@ -229,7 +252,7 @@ const SoundFX = {
       osc.type = 'triangle';
       osc.frequency.setValueAtTime(n.f, startT);
 
-      gain.gain.setValueAtTime(0.3, startT);
+      gain.gain.setValueAtTime(0.35, startT);
       gain.gain.exponentialRampToValueAtTime(0.001, startT + n.d);
 
       osc.connect(gain);
@@ -265,7 +288,7 @@ const VisualFX = {
     this.canvas.height = window.innerHeight;
   },
 
-  // 팡! 스파크 파티클 터짐
+  // 스파크 파티클 터짐
   spawnHit(x, y, count = 12, colors = ['#fbbf24', '#f59e0b', '#38bdf8', '#818cf8', '#ffffff']) {
     for (let i = 0; i < count; i++) {
       const angle = Math.random() * Math.PI * 2;
@@ -285,8 +308,8 @@ const VisualFX = {
     }
   },
 
-  // 문장 완료 대폭발 파티클
-  spawnBurst(x, y, count = 40) {
+  // 대폭발 파티클
+  spawnBurst(x, y, count = 45) {
     const goldColors = ['#fbbf24', '#f59e0b', '#10b981', '#34d399', '#ffffff', '#e11d48'];
     this.spawnHit(x, y, count, goldColors);
   },
@@ -297,7 +320,7 @@ const VisualFX = {
     if (!app) return;
     const className = type === 'error' ? 'shake-error' : 'shake-hit';
     app.classList.remove('shake-hit', 'shake-error');
-    void app.offsetWidth; // Force Reflow
+    void app.offsetWidth;
     app.classList.add(className);
     setTimeout(() => {
       app.classList.remove(className);
@@ -337,52 +360,117 @@ const VisualFX = {
 
 
 // ============================================================================
-// 3. 한글 초성 분해 및 힌트 알고리즘 (ChosungEngine)
+// 3. 지능형 핵심 키워드 분석기 & 초성 엔진 (Keyword & Chosung Analyzer)
 // ============================================================================
-const ChosungEngine = {
+const NLPAnalyzer = {
+  // 한국어 불용어 (조사, 형식 형태소, 접속사 등)
+  KO_STOPWORDS: new Set([
+    '은', '는', '이', '가', '을', '를', '의', '에', '에서', '로', '으로',
+    '과', '와', '하고', '도', '만', '뿐', '부터', '까지', '에게', '한테',
+    '보다', '등', '및', '즉', '수', '것', '때', '그', '이', '저', '우리',
+    '또한', '그리고', '그러나', '하지만', '하여', '하며', '하고', '이다',
+    '있다', '없다', '된다', '한다'
+  ]),
+
+  // 영어 불용어 (관사, 전치사, be동사, 대명사 등)
+  EN_STOPWORDS: new Set([
+    'a', 'an', 'the', 'is', 'are', 'was', 'were', 'be', 'been', 'being',
+    'have', 'has', 'had', 'do', 'does', 'did', 'to', 'of', 'in', 'for',
+    'on', 'with', 'at', 'by', 'from', 'up', 'about', 'into', 'over', 'after',
+    'and', 'or', 'but', 'so', 'if', 'that', 'this', 'it', 'they', 'we',
+    'you', 'he', 'she', 'his', 'her', 'their', 'my', 'your', 'our'
+  ]),
+
   CHOSUNG_LIST: [
     'ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ','ㅅ','ㅆ','ㅇ','ㅈ','ㅉ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'
   ],
 
-  // 한국어 초성 분리 또는 영문 첫글자 분리
-  toChosungString(text) {
-    return text.split('').map(char => {
+  // 단어가 핵심 키워드인지 판별하고 중요도 점수 반환
+  getKeywordScore(word, lang = 'ko-KR') {
+    const clean = word.replace(/[^a-zA-Z0-9가-힣]/g, '').toLowerCase();
+    if (clean.length <= 1) return 0;
+
+    if (lang.startsWith('en')) {
+      if (this.EN_STOPWORDS.has(clean)) return 1;
+      return clean.length >= 4 ? 10 : 5;
+    }
+
+    // 한국어: 조사 분리 분석
+    if (this.KO_STOPWORDS.has(clean)) return 1;
+
+    // 조사가 붙어있는 긴 단어 검사 (예: "헌법을", "민주개혁과")
+    const commonPostpositions = ['에서', '으로', '부터', '까지', '에게', '은', '는', '이', '가', '을', '를', '의', '에', '로', '과', '와', '도'];
+    let stem = clean;
+    for (const post of commonPostpositions) {
+      if (stem.endsWith(post) && stem.length > post.length + 1) {
+        stem = stem.slice(0, -post.length);
+        break;
+      }
+    }
+
+    if (stem.length >= 2 && !this.KO_STOPWORDS.has(stem)) {
+      return 10; // 명사/핵심어
+    }
+    return 3;
+  },
+
+  // 2단계: 핵심 키워드 우선 가리기 (기본 난이도: 어려움 75%)
+  generateKeywordCloze(sentence, level = 75, lang = 'ko-KR') {
+    const tokens = sentence.split(/(\s+)/);
+    // 각 단어별 점수 계산
+    const wordList = [];
+    tokens.forEach((token, idx) => {
+      if (!/^\s+$/.test(token) && /[a-zA-Z0-9가-힣]/.test(token)) {
+        const score = this.getKeywordScore(token, lang);
+        wordList.push({ token, idx, score });
+      }
+    });
+
+    // 점수가 높은 핵심 키워드 순으로 정렬
+    const sorted = [...wordList].sort((a, b) => b.score - a.score);
+    // 가릴 단어 개수 산출 (어려움: 75% -> 핵심 키워드 80% 이상 전멸)
+    const ratio = level / 100;
+    const targetCount = Math.max(1, Math.round(wordList.length * ratio));
+    const blankIndices = new Set(sorted.slice(0, targetCount).map(item => item.idx));
+
+    return tokens.map((token, idx) => {
+      if (blankIndices.has(idx)) {
+        return `<span class="cloze-blank" data-ans="${encodeURIComponent(token)}" onclick="App.handleClozeClick(this)">???</span>`;
+      }
+      return App.escapeHtml(token);
+    }).join('');
+  },
+
+  // 3단계: 초성/첫글자 단서 생성
+  generateChosungPrompt(sentence, lang = 'ko-KR') {
+    if (lang.startsWith('en')) {
+      return sentence.replace(/[a-zA-Z]+/g, match => {
+        if (match.length <= 1) return match;
+        const first = match[0];
+        const rest = '_'.repeat(match.length - 1);
+        return `<span class="chosung-char">${first}</span><span class="chosung-mask">${rest}</span>`;
+      });
+    }
+
+    // 한국어 초성 분리
+    return sentence.split('').map(char => {
       const code = char.charCodeAt(0);
-      // 한글 음절 범위: 가(0xAC00) ~ 힣(0xD7A3)
       if (code >= 0xAC00 && code <= 0xD7A3) {
         const chosungIndex = Math.floor((code - 0xAC00) / (21 * 28));
         return `<span class="chosung-char">${this.CHOSUNG_LIST[chosungIndex]}</span>`;
       }
       return char;
     }).join('');
-  },
-
-  // 영문 단어 첫 글자 + 마스킹 변환 (예: "apple" -> "a____")
-  toEnglishPrompt(text) {
-    return text.replace(/[a-zA-Z]+/g, match => {
-      if (match.length <= 1) return match;
-      const first = match[0];
-      const rest = '_'.repeat(match.length - 1);
-      return `<span class="chosung-char">${first}</span><span class="chosung-mask">${rest}</span>`;
-    });
-  },
-
-  // 언어에 맞게 자동 스마트 프롬프트 생성
-  generatePrompt(text, lang = 'ko-KR') {
-    if (lang.startsWith('en')) {
-      return this.toEnglishPrompt(text);
-    }
-    return this.toChosungString(text);
   }
 };
 
 
 // ============================================================================
-// 4. 애플리케이션 상태 및 저장소 관리 (Store)
+// 4. 스토어 및 진행도 관리 (Store)
 // ============================================================================
 const Store = {
-  STORAGE_KEY: 'MEMORY_GOD_DATA_V2',
-  SETTINGS_KEY: 'MEMORY_GOD_SETTINGS_V2',
+  STORAGE_KEY: 'MEMORY_GOD_PRO_DATA_V3',
+  SETTINGS_KEY: 'MEMORY_GOD_PRO_SETTINGS_V3',
 
   data: {
     texts: [],
@@ -395,11 +483,10 @@ const Store = {
     fontScale: 1,
     theme: 'dark',
     ttsRate: 1.0,
-    clozeLevel: 25
+    clozeLevel: 75 // 기본: 어려움 (핵심 75%)
   },
 
   init() {
-    // 1. 설정 로드
     const savedSettings = localStorage.getItem(this.SETTINGS_KEY);
     if (savedSettings) {
       try {
@@ -409,7 +496,6 @@ const Store = {
       }
     }
 
-    // 2. 지문 데이터 로드
     const savedData = localStorage.getItem(this.STORAGE_KEY);
     if (savedData) {
       try {
@@ -419,12 +505,10 @@ const Store = {
       }
     }
 
-    // 데이터가 없으면 samples.js 데이터 주입
     if (!this.data.texts || this.data.texts.length === 0) {
       this.data.texts = (typeof SAMPLE_TEXTS !== 'undefined') ? JSON.parse(JSON.stringify(SAMPLE_TEXTS)) : [];
-      // 초기 상태 메타데이터 보강
       this.data.texts.forEach(t => {
-        t.progress = t.progress || {};
+        t.stepProgress = t.stepProgress || { 1: {}, 2: {}, 3: {}, 4: {}, 5: {} };
         t.weakList = t.weakList || [];
       });
       if (this.data.texts.length > 0) {
@@ -447,7 +531,11 @@ const Store = {
   },
 
   getCurrentText() {
-    return this.data.texts.find(t => t.id === this.data.currentTextId) || this.data.texts[0];
+    const t = this.data.texts.find(item => item.id === this.data.currentTextId) || this.data.texts[0];
+    if (t && !t.stepProgress) {
+      t.stepProgress = { 1: {}, 2: {}, 3: {}, 4: {}, 5: {} };
+    }
+    return t;
   },
 
   setCurrentTextId(id) {
@@ -456,6 +544,8 @@ const Store = {
   },
 
   addNewText(textObj) {
+    textObj.stepProgress = { 1: {}, 2: {}, 3: {}, 4: {}, 5: {} };
+    textObj.weakList = [];
     this.data.texts.push(textObj);
     this.data.currentTextId = textObj.id;
     this.saveData();
@@ -496,12 +586,9 @@ const SpeechEngine = {
     utterance.lang = lang;
     utterance.rate = rate;
 
-    // 한국어/영어 적합 음성 선택
     const voices = this.synth.getVoices();
     const suitableVoice = voices.find(v => v.lang.startsWith(lang.substring(0, 2)));
-    if (suitableVoice) {
-      utterance.voice = suitableVoice;
-    }
+    if (suitableVoice) utterance.voice = suitableVoice;
 
     if (onEnd) utterance.onend = onEnd;
     this.synth.speak(utterance);
@@ -558,13 +645,13 @@ const SpeechEngine = {
 // 6. 메인 애플리케이션 코어 컨트롤러 (App)
 // ============================================================================
 const App = {
-  currentMode: 1, // 1: 낭독, 2: 빈칸, 3: 초성, 4: 체이닝, 5: 고스트타자, 'drill': 오답드릴
+  currentMode: 1, // 1~5, 'drill'
   currentIndex: 0,
   revealed: false,
   combo: 0,
   sidebarFilter: 'all',
 
-  // 5단계 타자 관련 변수
+  // 5단계 블라인드 타자 상태
   typingStats: {
     startTime: null,
     totalChars: 0,
@@ -583,11 +670,10 @@ const App = {
     this.loadText(Store.data.currentTextId);
   },
 
-  // UI 설정 반영
   applySettingsToUI() {
     document.body.className = Store.settings.theme === 'light' ? 'theme-light' : 'theme-dark';
     document.getElementById('themeIcon').textContent = Store.settings.theme === 'light' ? '☀️' : '🌙';
-    
+
     SoundFX.enabled = Store.settings.sound;
     const btnSound = document.getElementById('btnSoundToggle');
     btnSound.classList.toggle('active', Store.settings.sound);
@@ -598,9 +684,13 @@ const App = {
 
     document.documentElement.style.setProperty('--font-scale', Store.settings.fontScale);
     document.getElementById('ttsRateSelect').value = Store.settings.ttsRate;
+
+    // 2단계 난이도 기본값 활성화
+    document.querySelectorAll('.btn-fade').forEach(btn => {
+      btn.classList.toggle('active', parseInt(btn.dataset.level, 10) === Store.settings.clozeLevel);
+    });
   },
 
-  // 이벤트 바인딩
   bindEvents() {
     // 1. 헤더 컨트롤
     document.getElementById('textSelect').addEventListener('change', (e) => {
@@ -636,7 +726,7 @@ const App = {
       this.applySettingsToUI();
     });
 
-    // 2. 5단계 네비게이션 탭
+    // 2. 5대 마스터리 탭
     document.querySelectorAll('.nav-tab').forEach(tab => {
       tab.addEventListener('click', () => {
         const mode = tab.dataset.mode;
@@ -644,7 +734,7 @@ const App = {
       });
     });
 
-    // 3. 카드 네비게이션 버튼
+    // 3. 카드 제어 버튼
     document.getElementById('btnPrevSentence').addEventListener('click', () => this.prevSentence());
     document.getElementById('btnNextSentence').addEventListener('click', () => this.nextSentence());
     document.getElementById('btnMarkMemorized').addEventListener('click', () => this.markCurrentAsMemorized());
@@ -652,14 +742,14 @@ const App = {
     document.getElementById('btnSpeakCurrent').addEventListener('click', () => this.speakCurrentSentence());
     document.getElementById('btnToggleWeakness').addEventListener('click', () => this.toggleCurrentWeakness());
 
-    // 4. 서브 컨트롤 (1단계 낭독 속도, 전체 낭독)
+    // 4. 서브 컨트롤
     document.getElementById('ttsRateSelect').addEventListener('change', (e) => {
       Store.settings.ttsRate = parseFloat(e.target.value);
       Store.saveSettings();
     });
     document.getElementById('btnPlayFullTTS').addEventListener('click', () => this.playFullTextTTS());
 
-    // 5. 서브 컨트롤 (2단계 은닉률)
+    // 2단계 키워드 난이도
     document.querySelectorAll('.btn-fade').forEach(btn => {
       btn.addEventListener('click', () => {
         document.querySelectorAll('.btn-fade').forEach(b => b.classList.remove('active'));
@@ -670,21 +760,19 @@ const App = {
       });
     });
 
-    // 6. 5단계 고스트 타자 인풋
+    // 5. 5단계 블라인드 타자
     const typingInput = document.getElementById('typingInput');
-    typingInput.addEventListener('input', (e) => this.handleTypingInput(e));
+    typingInput.addEventListener('input', (e) => this.handleBlindTypingInput(e));
     typingInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
-        this.checkTypingComplete();
+        this.checkBlindTypingComplete();
       }
     });
 
-    // 7. 음성 인식(STT)
-    const btnMic = document.getElementById('btnStartVoiceRec');
-    btnMic.addEventListener('click', () => this.toggleVoiceRecognition());
+    // 6. 음성 인식
+    document.getElementById('btnStartVoiceRec').addEventListener('click', () => this.toggleVoiceRecognition());
 
-    // 8. 5단계 모드 전환 (타자 vs 음성)
     document.getElementById('btnTypeModeKey').addEventListener('click', () => {
       document.getElementById('btnTypeModeKey').classList.add('active');
       document.getElementById('btnTypeModeVoice').classList.remove('active');
@@ -698,7 +786,7 @@ const App = {
       document.getElementById('voiceArea').classList.remove('hidden');
     });
 
-    // 9. 사이드바 필터 탭
+    // 7. 사이드바 필터
     document.querySelectorAll('.filter-chip').forEach(chip => {
       chip.addEventListener('click', () => {
         document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
@@ -709,9 +797,9 @@ const App = {
     });
 
     document.getElementById('btnResetProgress').addEventListener('click', () => {
-      if (confirm('현재 지문의 학습 진행도를 초기화하시겠습니까?')) {
+      if (confirm('현재 지문의 전체 스테이지 학습 진행도를 초기화하시겠습니까?')) {
         const curText = Store.getCurrentText();
-        curText.progress = {};
+        curText.stepProgress = { 1: {}, 2: {}, 3: {}, 4: {}, 5: {} };
         Store.saveData();
         this.updateMasteryUI();
         this.renderSentenceList();
@@ -719,9 +807,8 @@ const App = {
       }
     });
 
-    // 10. 전역 키보드 단축키
+    // 8. 전역 키보드 단축키
     window.addEventListener('keydown', (e) => {
-      // 모달 열려있거나 텍스트 입력창 포커스 중엔 기본 단축키 차단
       const activeEl = document.activeElement;
       if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) {
         return;
@@ -744,13 +831,20 @@ const App = {
       }
     });
 
-    // 11. 모달 팝업 핸들러
+    // 9. 스테이지 클리어 모달에서 다음 스테이지로 진격 버튼
+    document.getElementById('btnProceedNextStage').addEventListener('click', () => {
+      document.getElementById('modalStageClear').classList.add('hidden');
+      if (typeof this.currentMode === 'number' && this.currentMode < 5) {
+        this.setMode(this.currentMode + 1);
+        this.currentIndex = 0;
+        this.renderCardContent();
+      }
+    });
+
     this.bindModalEvents();
   },
 
-  // 모달 이벤트 바인딩
   bindModalEvents() {
-    // 새 지문 등록 모달 열기
     document.getElementById('btnOpenAddModal').addEventListener('click', () => {
       document.getElementById('modalAddText').classList.remove('hidden');
       document.getElementById('inputTitle').value = '';
@@ -759,13 +853,11 @@ const App = {
       document.getElementById('previewCount').textContent = '0';
     });
 
-    // 지문 관리 모달 열기
     document.getElementById('btnOpenManageModal').addEventListener('click', () => {
       this.renderManageModalList();
       document.getElementById('modalManageText').classList.remove('hidden');
     });
 
-    // 모달 닫기 공통
     document.querySelectorAll('[data-close]').forEach(btn => {
       btn.addEventListener('click', () => {
         const modalId = btn.getAttribute('data-close');
@@ -773,7 +865,6 @@ const App = {
       });
     });
 
-    // 실시간 본문 입력 시 분할 미리보기
     const inputContent = document.getElementById('inputContent');
     const splitMethod = document.getElementById('splitMethod');
     const updatePreview = () => {
@@ -792,7 +883,6 @@ const App = {
     inputContent.addEventListener('input', updatePreview);
     splitMethod.addEventListener('change', updatePreview);
 
-    // 새 지문 저장
     document.getElementById('btnSaveNewText').addEventListener('click', () => {
       const title = document.getElementById('inputTitle').value.trim();
       const content = document.getElementById('inputContent').value.trim();
@@ -818,7 +908,7 @@ const App = {
         language,
         description: `사용자 등록 지문 (${sentences.length}개 문장)`,
         sentences,
-        progress: {},
+        stepProgress: { 1: {}, 2: {}, 3: {}, 4: {}, 5: {} },
         weakList: []
       };
 
@@ -829,7 +919,6 @@ const App = {
       SoundFX.playSentenceMastered();
     });
 
-    // JSON 내보내기 & 가져오기
     document.getElementById('btnExportData').addEventListener('click', () => {
       const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(Store.data, null, 2));
       const downloadAnchor = document.createElement('a');
@@ -865,7 +954,6 @@ const App = {
     });
   },
 
-  // 지문 관리 모달 목록 렌더링
   renderManageModalList() {
     const container = document.getElementById('manageTextList');
     container.innerHTML = Store.data.texts.map(text => `
@@ -893,7 +981,6 @@ const App = {
     }
   },
 
-  // 텍스트를 문장 단위로 분할하는 스마트 파서
   splitTextToSentences(text, method = 'smart') {
     if (!text) return [];
     if (method === 'newline') {
@@ -902,7 +989,6 @@ const App = {
     if (method === 'period') {
       return text.split(/(?<=[.!?])\s+/).map(s => s.trim()).filter(s => s.length > 0);
     }
-    // smart: 줄바꿈과 구두점을 적절히 분할
     const lines = text.split(/\r?\n/);
     const results = [];
     lines.forEach(line => {
@@ -914,7 +1000,6 @@ const App = {
     return results;
   },
 
-  // 지문 선택 드롭다운 갱신
   renderTextSelectOptions() {
     const select = document.getElementById('textSelect');
     select.innerHTML = Store.data.texts.map(t => 
@@ -922,7 +1007,6 @@ const App = {
     ).join('');
   },
 
-  // 지문 불러오기
   loadText(textId) {
     Store.setCurrentTextId(textId);
     this.currentIndex = 0;
@@ -931,7 +1015,7 @@ const App = {
     this.updateComboUI();
 
     const curText = Store.getCurrentText();
-    curText.progress = curText.progress || {};
+    curText.stepProgress = curText.stepProgress || { 1: {}, 2: {}, 3: {}, 4: {}, 5: {} };
     curText.weakList = curText.weakList || [];
 
     document.getElementById('textSelect').value = curText.id;
@@ -940,32 +1024,25 @@ const App = {
     this.renderCardContent();
   },
 
-  // 모드 설정 (1~5, drill)
   setMode(mode) {
     this.currentMode = mode;
     this.revealed = false;
 
-    // 네비 탭 활성화 변경
     document.querySelectorAll('.nav-tab').forEach(tab => {
-      if (tab.dataset.mode === String(mode)) {
-        tab.classList.add('active');
-      } else {
-        tab.classList.remove('active');
-      }
+      tab.classList.toggle('active', tab.dataset.mode === String(mode));
     });
 
-    // 상단 뱃지 텍스트
     const badgeMap = {
-      1: 'STEP 1: 낭독 & 쉐도잉',
-      2: 'STEP 2: 점진적 빈칸 뚫기',
-      3: 'STEP 3: 초성/첫글자 연상',
-      4: 'STEP 4: 누적 체이닝 암기',
-      5: 'STEP 5: 고스트 실시간 타자',
-      'drill': '🔥 취약 문장 무한 드릴'
+      1: 'STAGE 1: 정독 & 뇌새김',
+      2: 'STAGE 2: 키워드 강제인출',
+      3: 'STAGE 3: 초성 락커',
+      4: 'STAGE 4: 스노우볼 체이닝',
+      5: 'STAGE 5: 백지 블라인드',
+      'drill': '🔥 취약 문장 지옥훈련'
     };
     document.getElementById('currentModeBadge').textContent = badgeMap[mode] || '학습 모드';
 
-    // 서브 컨트롤 패널 토글
+    // 서브 컨트롤
     document.querySelectorAll('.sub-ctrl-panel').forEach(p => p.classList.add('hidden'));
     if (mode === 1) document.getElementById('ctrlStep1').classList.remove('hidden');
     if (mode === 2) document.getElementById('ctrlStep2').classList.remove('hidden');
@@ -976,7 +1053,6 @@ const App = {
     this.renderCardContent();
   },
 
-  // 현재 모드에 따라 사용되는 문장 목록 가져오기
   getActiveSentences() {
     const curText = Store.getCurrentText();
     if (!curText || !curText.sentences) return [];
@@ -995,7 +1071,6 @@ const App = {
     return list[this.currentIndex];
   },
 
-  // 카드 내용 렌더링
   renderCardContent() {
     const item = this.getCurrentSentenceData();
     const curText = Store.getCurrentText();
@@ -1004,6 +1079,7 @@ const App = {
       if (this.currentMode === 'drill') {
         document.getElementById('targetDisplayText').innerHTML = '🎉 등록된 취약 문장이 없습니다!<br><span style="font-size:0.9rem; color:var(--text-muted)">다른 단계에서 별표(⭐)를 눌러 취약 문장을 추가해보세요.</span>';
         document.getElementById('sentenceCounter').textContent = '0 / 0';
+        document.getElementById('stepSentenceStatus').textContent = '완벽 클리어!';
         document.getElementById('revealArea').classList.add('hidden');
         document.getElementById('typingArea').classList.add('hidden');
         document.getElementById('voiceArea').classList.add('hidden');
@@ -1016,74 +1092,84 @@ const App = {
     const totalCount = this.getActiveSentences().length;
     document.getElementById('sentenceCounter').textContent = `문장 ${this.currentIndex + 1} / ${totalCount}`;
 
-    // 취약 문장 뱃지 및 별표 버튼 상태
+    // 현재 스텝 통과 개수 표시
+    if (typeof this.currentMode === 'number') {
+      const stepProg = (curText.stepProgress && curText.stepProgress[this.currentMode]) || {};
+      const passedCount = Object.keys(stepProg).filter(k => stepProg[k]).length;
+      document.getElementById('stepSentenceStatus').textContent = `이 스텝 통과: ${passedCount} / ${curText.sentences.length}`;
+    } else {
+      document.getElementById('stepSentenceStatus').textContent = `취약 문장 훈련 중`;
+    }
+
+    // 취약 문장 뱃지
     const isWeak = (curText.weakList || []).includes(originalIndex);
     document.getElementById('weaknessBadge').classList.toggle('hidden', !isWeak);
     document.getElementById('btnToggleWeakness').classList.toggle('starred', isWeak);
     document.getElementById('starIcon').textContent = isWeak ? '★' : '⭐';
 
-    // 영역 초기화
     const textDisplayBox = document.getElementById('targetDisplayText');
     const revealArea = document.getElementById('revealArea');
     const typingArea = document.getElementById('typingArea');
     const voiceArea = document.getElementById('voiceArea');
     const contextPreviewBox = document.getElementById('contextPreviewBox');
+    const errorAlertBanner = document.getElementById('errorAlertBanner');
 
     revealArea.classList.add('hidden');
     typingArea.classList.add('hidden');
     voiceArea.classList.add('hidden');
     contextPreviewBox.classList.add('hidden');
+    errorAlertBanner.classList.add('hidden');
     this.revealed = false;
     document.getElementById('revealedOriginalText').classList.add('hidden');
 
     // -------------------------------------------------------------
-    // 모드 1: 낭독 & 쉐도잉
+    // STAGE 1: 정독 & 뇌새김
     // -------------------------------------------------------------
     if (this.currentMode === 1) {
       textDisplayBox.innerHTML = this.escapeHtml(sentence);
     }
     // -------------------------------------------------------------
-    // 모드 2: 점진적 빈칸 뚫기
+    // STAGE 2: 키워드 강제인출 (NLP 형태소 분석 기반 중요 키워드 우선 소멸)
     // -------------------------------------------------------------
     else if (this.currentMode === 2) {
       revealArea.classList.remove('hidden');
-      textDisplayBox.innerHTML = this.generateClozeHtml(sentence, Store.settings.clozeLevel);
+      textDisplayBox.innerHTML = NLPAnalyzer.generateKeywordCloze(sentence, Store.settings.clozeLevel, curText.language);
       document.getElementById('revealedTextContent').textContent = sentence;
     }
     // -------------------------------------------------------------
-    // 모드 3: 초성 / 첫글자 단서 훈련
+    // STAGE 3: 초성 락커 (원문 0%, 초성만으로 전체 인출)
     // -------------------------------------------------------------
     else if (this.currentMode === 3) {
       revealArea.classList.remove('hidden');
-      textDisplayBox.innerHTML = ChosungEngine.generatePrompt(sentence, curText.language);
+      textDisplayBox.innerHTML = NLPAnalyzer.generateChosungPrompt(sentence, curText.language);
       document.getElementById('revealedTextContent').textContent = sentence;
     }
     // -------------------------------------------------------------
-    // 모드 4: 누적 체이닝 암기
+    // STAGE 4: 스노우볼 체이닝 (배우식 누적 폭풍 암기)
     // -------------------------------------------------------------
     else if (this.currentMode === 4) {
       revealArea.classList.remove('hidden');
       contextPreviewBox.classList.remove('hidden');
 
-      // 이전 문장들을 누적 맥락으로 표시
       const prevSentences = curText.sentences.slice(0, originalIndex);
       if (prevSentences.length > 0) {
-        contextPreviewBox.innerHTML = `<strong>앞 문장 흐름:</strong><br>${prevSentences.map((s, idx) => `[${idx + 1}] ${s}`).join('<br>')}`;
+        contextPreviewBox.innerHTML = `<strong>앞선 문장 연결 사슬:</strong><br>${prevSentences.map((s, idx) => `[${idx + 1}] ${s}`).join('<br>')}`;
       } else {
-        contextPreviewBox.innerHTML = `<strong>첫 번째 문장 시작!</strong> 긴 장문의 첫 단추를 완벽하게 각인하세요.`;
+        contextPreviewBox.innerHTML = `<strong>첫 문장 개시!</strong> 거대한 스노우볼의 첫 번째 뼈대를 세우세요.`;
       }
 
       document.getElementById('chainingRangeText').textContent = `누적 범위: 1번 ~ ${originalIndex + 1}번 문장 연쇄`;
-      // 현재 문장은 첫 글자 힌트 상태로 보여줌
-      textDisplayBox.innerHTML = ChosungEngine.generatePrompt(sentence, curText.language);
+      // 현재 문장은 초성으로만 노출하여 인출 자극
+      textDisplayBox.innerHTML = NLPAnalyzer.generateChosungPrompt(sentence, curText.language);
       document.getElementById('revealedTextContent').textContent = sentence;
     }
     // -------------------------------------------------------------
-    // 모드 5 or 드릴: 고스트 타자 / 음성 구술
+    // STAGE 5 or 드릴: 백지 블라인드 타자 (정답 완전 비노출)
     // -------------------------------------------------------------
     else if (this.currentMode === 5 || this.currentMode === 'drill') {
-      textDisplayBox.innerHTML = `<span style="color:var(--text-dim); font-size:1.1rem;">⌨️ 머릿속으로 전체 문장을 떠올려 아래에 타이핑하세요!</span>`;
+      textDisplayBox.innerHTML = `<span style="color:var(--text-dim); font-size:1.15rem;">🔒 정답은 봉인되어 있습니다. 머릿속의 기억만으로 첫 글자부터 타이핑하세요!</span>`;
       typingArea.classList.remove('hidden');
+      
       const typingInput = document.getElementById('typingInput');
       typingInput.value = '';
       typingInput.focus();
@@ -1093,29 +1179,13 @@ const App = {
         totalChars: 0,
         errors: 0
       };
-      this.updateTypingGuide('');
+      
+      // 블라인드 결과창 초기화 (정답 노출 없음!)
+      this.updateBlindTypedView('');
       this.updateTypingStatsUI();
     }
 
     this.renderSentenceList();
-  },
-
-  // 점진적 빈칸 뚫기 HTML 생성
-  generateClozeHtml(sentence, level) {
-    const words = sentence.split(/(\s+)/);
-    // level: 25, 50, 75, 100
-    const blankProbability = level / 100;
-
-    return words.map(w => {
-      if (/^\s+$/.test(w)) return w;
-      // 특수문자만 있는 경우 빈칸 제외
-      if (!/[a-zA-Z0-9가-힣]/.test(w)) return w;
-
-      if (level === 100 || Math.random() < blankProbability) {
-        return `<span class="cloze-blank" data-ans="${encodeURIComponent(w)}" onclick="App.handleClozeClick(this)">???</span>`;
-      }
-      return this.escapeHtml(w);
-    }).join('');
   },
 
   // 빈칸 클릭 시 팡! 소리와 함께 공개
@@ -1125,7 +1195,6 @@ const App = {
     el.textContent = ans;
     el.classList.add('revealed');
 
-    // 타격 사운드 + 파티클 + 스크린 쉐이크
     const rect = el.getBoundingClientRect();
     SoundFX.playHit(this.combo);
     VisualFX.spawnHit(rect.left + rect.width / 2, rect.top + rect.height / 2, 10);
@@ -1133,8 +1202,8 @@ const App = {
     this.addCombo();
   },
 
-  // 5단계 고스트 타자 실시간 입력 처리
-  handleTypingInput(e) {
+  // 5단계 완전 블라인드 타자 실시간 처리 (정답 미리보기 완전 배제)
+  handleBlindTypingInput(e) {
     const inputVal = e.target.value;
     const item = this.getCurrentSentenceData();
     if (!item) return;
@@ -1143,81 +1212,67 @@ const App = {
       this.typingStats.startTime = Date.now();
     }
 
-    // 키 타건음
     SoundFX.playKeyClick();
-
-    this.updateTypingGuide(inputVal);
-    this.checkTypingRealtime(inputVal, item.sentence);
+    this.checkBlindTypingRealtime(inputVal, item.sentence);
   },
 
-  // 실시간 타자 가이드 렌더링
-  updateTypingGuide(inputVal) {
-    const item = this.getCurrentSentenceData();
-    if (!item) return;
-    const target = item.sentence;
-    const guideBox = document.getElementById('ghostGuide');
+  // 블라인드 타자 실시간 정밀 채점
+  checkBlindTypingRealtime(inputVal, target) {
+    const errorBanner = document.getElementById('errorAlertBanner');
+    const errorText = document.getElementById('errorAlertText');
 
-    let html = '';
-    const maxLen = Math.max(inputVal.length, target.length);
+    if (!inputVal) {
+      this.updateBlindTypedView('');
+      errorBanner.classList.add('hidden');
+      return;
+    }
 
-    for (let i = 0; i < maxLen; i++) {
-      const targetChar = target[i] || '';
-      const inputChar = inputVal[i] || '';
+    // 일치 여부 비교 (구두점 유연 모드)
+    let hasError = false;
+    let correctPrefix = '';
+    let errorChar = '';
 
-      if (i < inputVal.length) {
-        // 일치 여부 비교
-        const isMatch = Store.settings.punctFlexible
-          ? this.normalizeChar(inputChar) === this.normalizeChar(targetChar)
-          : inputChar === targetChar;
+    for (let i = 0; i < inputVal.length; i++) {
+      const inCh = inputVal[i];
+      const tgCh = target[i] || '';
 
-        if (isMatch) {
-          html += `<span class="ghost-char-correct">${this.escapeHtml(targetChar || inputChar)}</span>`;
-        } else {
-          html += `<span class="ghost-char-wrong">${this.escapeHtml(inputChar)}</span>`;
-        }
-      } else if (i === inputVal.length) {
-        // 현재 커서 위치
-        html += `<span class="ghost-char-cursor"></span><span class="ghost-char-pending">${this.escapeHtml(targetChar)}</span>`;
+      const isMatch = Store.settings.punctFlexible
+        ? this.normalizeChar(inCh) === this.normalizeChar(tgCh)
+        : inCh === tgCh;
+
+      if (isMatch) {
+        correctPrefix += tgCh || inCh;
       } else {
-        html += `<span class="ghost-char-pending">${this.escapeHtml(targetChar)}</span>`;
+        hasError = true;
+        errorChar = inCh;
+        break;
       }
     }
 
-    guideBox.innerHTML = html;
-  },
+    // 화면 뷰 갱신: 맞춘 글자만 네온 그린으로 채움!
+    this.updateBlindTypedView(correctPrefix);
 
-  // 문자 정규화 (구두점/공백 유연 모드)
-  normalizeChar(ch) {
-    if (!ch) return '';
-    return ch.toLowerCase().replace(/['"`.,~!?\s]/g, '');
-  },
-
-  // 실시간 타자 정확도 체크 & 타격감 효과
-  checkTypingRealtime(inputVal, target) {
-    const lastIdx = inputVal.length - 1;
-    if (lastIdx < 0) return;
-
-    const inputChar = inputVal[lastIdx];
-    const targetChar = target[lastIdx];
-
-    const isMatch = Store.settings.punctFlexible
-      ? this.normalizeChar(inputChar) === this.normalizeChar(targetChar)
-      : inputChar === targetChar;
-
-    if (!isMatch) {
+    if (hasError) {
+      // 💥 오답 발생! 틀릴 때만 빨간색 경고 배너와 소리로 알려줌!
       this.typingStats.errors++;
       SoundFX.playErrorThud();
       VisualFX.shake('error');
       this.combo = 0;
       this.updateComboUI();
+
+      errorBanner.classList.remove('hidden');
+      const curIndexInTarget = correctPrefix.length;
+      const expectedChar = target[curIndexInTarget] || '';
+      errorText.innerHTML = `💥 <strong>[오답 발생!]</strong> 입력한 '<strong>${this.escapeHtml(errorChar)}</strong>' 자리가 틀렸습니다. (백스페이스로 지우고 다시 쳐보세요!)`;
     } else {
-      // 맞으면 팡! 효과
+      errorBanner.classList.add('hidden');
       this.addCombo();
       SoundFX.playHit(this.combo);
       VisualFX.shake('hit');
+
       const inputEl = document.getElementById('typingInput');
       const rect = inputEl.getBoundingClientRect();
-      VisualFX.spawnHit(rect.left + rect.width / 2, rect.top + 20, 6);
+      VisualFX.spawnHit(rect.left + rect.width / 2, rect.top + 20, 5);
     }
 
     // 문장 전체 완성 검사
@@ -1225,15 +1280,32 @@ const App = {
     const cleanTarget = Store.settings.punctFlexible ? target.replace(/[^\w가-힣]/g, '') : target.trim();
 
     if (cleanInput.length >= cleanTarget.length && cleanInput === cleanTarget) {
-      // 💥 문장 완성 격파!
       this.onSentenceCompleted();
     }
 
     this.updateTypingStatsUI();
   },
 
-  // 타자 수동 완료 검사 (엔터 키)
-  checkTypingComplete() {
+  // 맞춘 글자만 보여주는 블라인드 뷰
+  updateBlindTypedView(correctPrefix) {
+    const view = document.getElementById('blindTypedView');
+    if (!correctPrefix) {
+      view.innerHTML = `<span class="blind-placeholder">머릿속에서 기억을 끄집어내어 타이핑을 시작하세요...</span>`;
+      return;
+    }
+
+    view.innerHTML = `
+      <span class="blind-char-correct">${this.escapeHtml(correctPrefix)}</span>
+      <span class="blind-char-cursor"></span>
+    `;
+  },
+
+  normalizeChar(ch) {
+    if (!ch) return '';
+    return ch.toLowerCase().replace(/['"`.,~!?\s]/g, '');
+  },
+
+  checkBlindTypingComplete() {
     const inputVal = document.getElementById('typingInput').value;
     const item = this.getCurrentSentenceData();
     if (!item) return;
@@ -1246,11 +1318,10 @@ const App = {
     } else {
       SoundFX.playErrorThud();
       VisualFX.shake('error');
-      alert('아직 일치하지 않는 글자가 있습니다. 빨간색 표시를 확인해주세요!');
+      alert('문장이 아직 완전히 일치하지 않습니다. 틀린 글자를 수정해주세요!');
     }
   },
 
-  // 문장 격파 성공 시 공통 처리
   onSentenceCompleted() {
     SoundFX.playSentenceMastered();
     VisualFX.shake('hit');
@@ -1259,16 +1330,9 @@ const App = {
     VisualFX.spawnBurst(rect.left + rect.width / 2, rect.top + rect.height / 2, 50);
 
     this.markCurrentAsMemorized(false);
-
-    setTimeout(() => {
-      this.nextSentence();
-    }, 700);
   },
 
-  // 타자 통계 UI 업데이트
   updateTypingStatsUI() {
-    const item = this.getCurrentSentenceData();
-    if (!item) return;
     const inputVal = document.getElementById('typingInput').value;
     const totalChars = inputVal.length;
     const errors = this.typingStats.errors;
@@ -1284,7 +1348,6 @@ const App = {
     }
   },
 
-  // 콤보 증가
   addCombo() {
     this.combo++;
     if (this.combo >= 3 && this.combo % 3 === 0) {
@@ -1293,7 +1356,6 @@ const App = {
     this.updateComboUI();
   },
 
-  // 콤보 UI 갱신
   updateComboUI() {
     const banner = document.getElementById('comboBanner');
     const text = document.getElementById('comboText');
@@ -1305,29 +1367,32 @@ const App = {
     }
   },
 
-  // 정답 원문 토글 (Space 키)
   toggleReveal() {
     this.revealed = !this.revealed;
     const box = document.getElementById('revealedOriginalText');
     box.classList.toggle('hidden', !this.revealed);
-    document.getElementById('revealBtnLabel').textContent = this.revealed ? '🙈 정답 가리기 (Space)' : '👁️ 원문 정답 확인 (Space)';
+    document.getElementById('revealBtnLabel').textContent = this.revealed ? '🙈 정답 가리기 (Space)' : '👁️ 정답 원문 확인 (Space)';
     if (this.revealed) {
       SoundFX.playHit(0);
     }
   },
 
-  // 현재 문장 외움 마크
+  // "완벽히 외웠음!" 버튼 동작: 현재 문장 마크 -> 다음 문장으로 스무스 전환 -> 스텝 완료 시 다음 스텝 자동 승급
   markCurrentAsMemorized(playSound = true) {
     const item = this.getCurrentSentenceData();
     if (!item) return;
 
     const curText = Store.getCurrentText();
-    curText.progress = curText.progress || {};
-    curText.progress[item.originalIndex] = true;
+    curText.stepProgress = curText.stepProgress || { 1: {}, 2: {}, 3: {}, 4: {}, 5: {} };
 
-    // 만약 드릴 모드였다면 취약 목록에서 제거
+    // 현재 스텝에 마스터 체크
+    if (typeof this.currentMode === 'number') {
+      curText.stepProgress[this.currentMode] = curText.stepProgress[this.currentMode] || {};
+      curText.stepProgress[this.currentMode][item.originalIndex] = true;
+    }
+
     if (this.currentMode === 'drill') {
-      curText.weakList = curText.weakList.filter(idx => idx !== item.originalIndex);
+      curText.weakList = (curText.weakList || []).filter(idx => idx !== item.originalIndex);
     }
 
     Store.saveData();
@@ -1342,17 +1407,51 @@ const App = {
     this.updateMasteryUI();
     this.renderSentenceList();
 
-    // 100% 마스터 검사
+    // 해당 스텝 전체 완료 여부 검사
     const totalSentences = curText.sentences.length;
-    const masteredCount = Object.keys(curText.progress).filter(k => curText.progress[k]).length;
-    if (masteredCount >= totalSentences) {
-      this.showCongratulationModal();
-    } else if (playSound) {
-      setTimeout(() => this.nextSentence(), 400);
+    let stepAllCleared = false;
+
+    if (typeof this.currentMode === 'number') {
+      const stepProg = curText.stepProgress[this.currentMode] || {};
+      const passedCount = Object.keys(stepProg).filter(k => stepProg[k]).length;
+      if (passedCount >= totalSentences) {
+        stepAllCleared = true;
+      }
+    }
+
+    if (stepAllCleared) {
+      // 스테이지 클리어!
+      SoundFX.playStageClear();
+      VisualFX.spawnBurst(window.innerWidth / 2, window.innerHeight / 2, 80);
+
+      if (this.currentMode === 5) {
+        // 5단계 최종 완료!
+        this.showCongratulationModal();
+      } else {
+        // 1~4단계 클리어 시 축하 및 다음 스텝 전환 모달
+        const stageNames = {
+          1: 'STAGE 1: 정독 & 뇌새김',
+          2: 'STAGE 2: 키워드 강제인출',
+          3: 'STAGE 3: 초성 락커',
+          4: 'STAGE 4: 스노우볼 체이닝',
+          5: 'STAGE 5: 백지 블라인드'
+        };
+        const nextMode = this.currentMode + 1;
+        document.getElementById('stageClearTitle').textContent = `🎉 ${stageNames[this.currentMode]} 정복 완료!`;
+        document.getElementById('stageClearMessage').innerHTML = `
+          해당 지문의 모든 문장을 완벽하게 소화했습니다!<br>
+          이제 더 고난도인 <strong>${stageNames[nextMode]}</strong> 단계로 진격합니다!
+        `;
+        document.getElementById('modalStageClear').classList.remove('hidden');
+      }
+    } else {
+      // 스텝이 아직 덜 끝났으면 다음 문장으로 부드럽게 자동 전환!
+      setTimeout(() => {
+        this.nextSentence();
+      }, 350);
     }
   },
 
-  // 취약 문장 지정 토글 (별표)
   toggleCurrentWeakness() {
     const item = this.getCurrentSentenceData();
     if (!item) return;
@@ -1372,7 +1471,6 @@ const App = {
     this.renderCardContent();
   },
 
-  // 이전 문장으로 이동
   prevSentence() {
     const list = this.getActiveSentences();
     if (list.length === 0) return;
@@ -1380,7 +1478,6 @@ const App = {
     this.renderCardContent();
   },
 
-  // 다음 문장으로 이동
   nextSentence() {
     const list = this.getActiveSentences();
     if (list.length === 0) return;
@@ -1388,7 +1485,6 @@ const App = {
     this.renderCardContent();
   },
 
-  // 현재 문장 음성 듣기
   speakCurrentSentence() {
     const item = this.getCurrentSentenceData();
     const curText = Store.getCurrentText();
@@ -1398,7 +1494,6 @@ const App = {
     SpeechEngine.speak(item.sentence, curText.language, Store.settings.ttsRate);
   },
 
-  // 지문 전체 연속 재생
   playFullTextTTS() {
     const curText = Store.getCurrentText();
     if (!curText || !curText.sentences) return;
@@ -1416,7 +1511,6 @@ const App = {
     playNext();
   },
 
-  // 음성 인식(STT) 구술 모드 토글
   toggleVoiceRecognition() {
     const btnMic = document.getElementById('btnStartVoiceRec');
     const statusText = document.getElementById('voiceRecStatus');
@@ -1428,19 +1522,18 @@ const App = {
     if (SpeechEngine.isRecognizing) {
       SpeechEngine.stopListen();
       btnMic.classList.remove('recording');
-      statusText.textContent = '마이크 누르고 문장 말하기';
+      statusText.textContent = '마이크 누르고 문장 외워서 말하기';
       return;
     }
 
     btnMic.classList.add('recording');
-    statusText.textContent = '듣고 있습니다... 말씀하세요!';
+    statusText.textContent = '듣고 있습니다... 머릿속 문장을 외쳐보세요!';
     resultPreview.textContent = '음성 입력 대기 중...';
 
     SpeechEngine.startListen(
       curText.language,
       (transcript) => {
         resultPreview.textContent = `인식 결과: "${transcript}"`;
-        // 일치도 검사
         const cleanInput = transcript.replace(/[^\w가-힣]/g, '').toLowerCase();
         const cleanTarget = item.sentence.replace(/[^\w가-힣]/g, '').toLowerCase();
 
@@ -1451,31 +1544,35 @@ const App = {
       },
       () => {
         btnMic.classList.remove('recording');
-        statusText.textContent = '마이크 누르고 문장 말하기';
+        statusText.textContent = '마이크 누르고 문장 외워서 말하기';
       },
-      (err) => {
+      () => {
         btnMic.classList.remove('recording');
-        statusText.textContent = '마이크 누르고 문장 말하기';
+        statusText.textContent = '마이크 누르고 문장 외워서 말하기';
         resultPreview.textContent = '음성 인식 오류가 발생했습니다.';
       }
     );
   },
 
-  // 전체 암기 마스터율 UI 업데이트
   updateMasteryUI() {
     const curText = Store.getCurrentText();
     if (!curText || !curText.sentences || curText.sentences.length === 0) return;
 
     const total = curText.sentences.length;
-    const mastered = Object.keys(curText.progress || {}).filter(k => curText.progress[k]).length;
+    // 5단계 최종 마스터 완료된 문장 기준 또는 현재 스텝 기준
+    const finalProg = (curText.stepProgress && curText.stepProgress[5]) || {};
+    const mastered = Object.keys(finalProg).filter(k => finalProg[k]).length;
     const pct = Math.round((mastered / total) * 100);
 
     document.getElementById('masteryRateText').textContent = `${pct}%`;
     document.getElementById('masteryProgressBar').style.width = `${pct}%`;
     document.getElementById('sidebarCountBadge').textContent = `${mastered} / ${total}`;
+
+    // 현재 스텝 라벨
+    const stepLabel = typeof this.currentMode === 'number' ? `STAGE ${this.currentMode} 진행` : '지옥훈련 진행';
+    document.getElementById('stepProgressLabel').textContent = stepLabel;
   },
 
-  // 사이드바 문장 목록 렌더링
   renderSentenceList() {
     const container = document.getElementById('sentenceListContainer');
     const curText = Store.getCurrentText();
@@ -1485,14 +1582,14 @@ const App = {
     }
 
     const sentences = curText.sentences;
-    const progress = curText.progress || {};
+    const curStepProg = (curText.stepProgress && curText.stepProgress[this.currentMode]) || {};
     const weakList = curText.weakList || [];
     const activeItem = this.getCurrentSentenceData();
 
     const filtered = sentences.map((sentence, idx) => ({
       sentence,
       idx,
-      isMastered: !!progress[idx],
+      isMastered: !!curStepProg[idx],
       isWeak: weakList.includes(idx)
     })).filter(item => {
       if (this.sidebarFilter === 'unmastered') return !item.isMastered;
@@ -1521,7 +1618,6 @@ const App = {
     }).join('');
   },
 
-  // 사이드바 클릭으로 특정 문장 점프
   jumpToSentence(originalIndex) {
     const list = this.getActiveSentences();
     const targetIdx = list.findIndex(item => item.originalIndex === originalIndex);
@@ -1530,14 +1626,12 @@ const App = {
       this.renderCardContent();
       SoundFX.playHit(0);
     } else {
-      // 만약 현재 드릴 모드여서 해당 문장이 목록에 없다면 일반 모드로 전환
       this.setMode(1);
       this.currentIndex = originalIndex;
       this.renderCardContent();
     }
   },
 
-  // 100% 완전 정복 축하 모달 띄우기
   showCongratulationModal() {
     SoundFX.playFanfare();
     const curText = Store.getCurrentText();
@@ -1545,7 +1639,6 @@ const App = {
     document.getElementById('congratTotalCount').textContent = curText.sentences.length;
     document.getElementById('modalCongratulation').classList.remove('hidden');
 
-    // 축하 컨페티 폭죽 팡팡
     VisualFX.spawnBurst(window.innerWidth / 2, window.innerHeight / 2, 100);
     VisualFX.spawnBurst(window.innerWidth / 3, window.innerHeight / 2.5, 60);
     VisualFX.spawnBurst(window.innerWidth * 2 / 3, window.innerHeight / 2.5, 60);
@@ -1563,7 +1656,6 @@ const App = {
   }
 };
 
-// 앱 초기화 구동
 document.addEventListener('DOMContentLoaded', () => {
   App.init();
 });
