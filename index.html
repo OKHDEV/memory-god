@@ -24,31 +24,35 @@
         </div>
 
         <div class="text-selector-wrap">
-          <select id="textSelect" class="select-dropdown" title="암기할 지문 선택">
-            <!-- JS로 사용자 등록 지문 채움 -->
-          </select>
-          <button id="btnOpenAddModal" class="btn btn-primary btn-sm">
-            <span>➕</span> 새 지문 추가
-          </button>
-          <button id="btnImportTxt" class="btn btn-secondary btn-sm" title="컴퓨터에서 .txt 지문 파일 불러오기">
-            <span>📂</span> txt 불러오기
-          </button>
-          <button id="btnExportTxt" class="btn btn-secondary btn-sm" title="현재 지문을 컴퓨터에 .txt 파일로 저장">
-            <span>💾</span> txt 저장
-          </button>
-          <button id="btnOpenManageModal" class="btn btn-secondary btn-sm" title="지문 관리/편집">
-            <span>⚙️</span> 지문 관리
-          </button>
-          <button id="btnToggleSidebar" class="btn btn-secondary btn-sm" title="문장 전체 목록 펼치기/접기">
-            <span>📋</span> 문장 목록
-          </button>
-          <button id="btnOpenVoiceCoachModal" class="btn btn-secondary btn-sm" title="말로 외우기 AI 음성 코칭">
-            <span>🎙️</span> 말로 외우기
-          </button>
-          <button id="btnOpenMinigame" class="btn btn-secondary btn-sm" title="NPC 미니게임 아케이드 대전">
-            <span>🎮</span> 미니게임
-          </button>
-          <input type="file" id="importTxtInput" accept=".txt" class="hidden">
+          <div class="text-select-row">
+            <select id="textSelect" class="select-dropdown" title="암기할 지문 선택">
+              <!-- JS로 사용자 등록 지문 채움 -->
+            </select>
+            <button id="btnOpenAddModal" class="btn btn-primary btn-sm">
+              <span>➕</span> 새 지문 추가
+            </button>
+          </div>
+          <div class="header-action-btns">
+            <button id="btnImportTxt" class="btn btn-secondary btn-sm" title="컴퓨터에서 .txt 지문 파일 불러오기">
+              <span>📂</span> txt 불러오기
+            </button>
+            <button id="btnExportTxt" class="btn btn-secondary btn-sm" title="현재 지문을 컴퓨터에 .txt 파일로 저장">
+              <span>💾</span> txt 저장
+            </button>
+            <button id="btnOpenManageModal" class="btn btn-secondary btn-sm" title="지문 관리/편집">
+              <span>⚙️</span> 지문 관리
+            </button>
+            <button id="btnToggleSidebar" class="btn btn-secondary btn-sm" title="문장 전체 목록 펼치기/접기">
+              <span>📋</span> 문장 목록
+            </button>
+            <button id="btnOpenVoiceCoachModal" class="btn btn-secondary btn-sm" title="말로 외우기 AI 음성 코칭">
+              <span>🎙️</span> 말로 외우기
+            </button>
+            <button id="btnOpenMinigame" class="btn btn-secondary btn-sm" title="NPC 미니게임 아케이드 대전">
+              <span>🎮</span> 미니게임
+            </button>
+            <input type="file" id="importTxtInput" accept=".txt" class="hidden">
+          </div>
         </div>
       </div>
 
