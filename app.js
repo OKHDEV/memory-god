@@ -2092,7 +2092,7 @@ const App = {
       } else if (e.code === 'ArrowRight') {
         e.preventDefault();
         this.nextSentence();
-      } else if (e.key >= '1' && e.key <= '6') {
+      } else if (e.key >= '1' && e.key <= '5') {
         this.setMode(parseInt(e.key, 10));
       }
     });
@@ -2117,6 +2117,26 @@ const App = {
     if (btnOpenVoice) {
       btnOpenVoice.addEventListener('click', () => {
         this.openVoiceCoachModal();
+      });
+    }
+
+    // 🎮 상단 헤더 '미니게임' 버튼
+    const btnOpenMinigame = document.getElementById('btnOpenMinigame');
+    if (btnOpenMinigame) {
+      btnOpenMinigame.addEventListener('click', () => {
+        if (this.currentMode === 'minigame') {
+          this.setMode(this.previousLearningMode || 1);
+        } else {
+          this.setMode('minigame');
+        }
+      });
+    }
+
+    // 미니게임 화면 내 '학습으로 복귀' 버튼
+    const btnExitMinigame = document.getElementById('btnExitMinigame');
+    if (btnExitMinigame) {
+      btnExitMinigame.addEventListener('click', () => {
+        this.setMode(this.previousLearningMode || 1);
       });
     }
 
@@ -2468,12 +2488,26 @@ const App = {
     this.stopTimer();
     SpeechEngine.stopSpeak();
     SpeechEngine.stopListen();
+
+    if (String(mode) === 'minigame') {
+      if (this.currentMode && String(this.currentMode) !== 'minigame') {
+        this.previousLearningMode = this.currentMode;
+      }
+    } else {
+      this.previousLearningMode = mode;
+    }
+
     this.currentMode = mode;
     this.revealed = false;
 
     document.querySelectorAll('.nav-tab').forEach(tab => {
       tab.classList.toggle('active', String(tab.dataset.mode) === String(mode));
     });
+
+    const btnOpenMinigame = document.getElementById('btnOpenMinigame');
+    if (btnOpenMinigame) {
+      btnOpenMinigame.classList.toggle('active', String(mode) === 'minigame');
+    }
 
     const badgeMap = {
       '1': 'STAGE 1: 정독 & 뇌새김',
@@ -2482,7 +2516,6 @@ const App = {
       '3': 'STAGE 3: 초성 단어 락커',
       '4': 'STAGE 4: 스노우볼 30% 조립',
       '5': 'STAGE 5: 타임어택 단어 나열',
-      '6': 'STAGE 6: 말로 외우기 AI 코치',
       'drill': '⚡ FINAL DRILL: 타임어택 백지 블라인드',
       'minigame': '🎮 ARCADE: NPC 실시간 미니게임 배틀'
     };
@@ -2497,7 +2530,6 @@ const App = {
     else if (strMode === '3') document.getElementById('ctrlStep3').classList.remove('hidden');
     else if (strMode === '4') document.getElementById('ctrlStep4').classList.remove('hidden');
     else if (strMode === '5') document.getElementById('ctrlStep5').classList.remove('hidden');
-    else if (strMode === '6') document.getElementById('ctrlStep6').classList.remove('hidden');
     else if (strMode === 'drill') document.getElementById('ctrlDrill').classList.remove('hidden');
 
     if (strMode === 'minigame') {
@@ -2694,7 +2726,7 @@ const App = {
       this.setupStage4Snowball(sentence);
     }
     // -------------------------------------------------------------
-    // STAGE 5: 🔥 타임어택 단어 나열 (Scramble) - 바뀜!
+    // STAGE 5: 🔥 타임어택 단어 나열 (Scramble)
     // -------------------------------------------------------------
     else if (modeKey === '5') {
       document.getElementById('targetDisplayText').innerHTML = `<span style="color:var(--accent-gold); font-weight:800;">🔥 STAGE 5: 타임어택 단어 나열! 제한시간 내에 올바른 순서대로 단어를 클릭하세요!</span>`;
@@ -2702,16 +2734,7 @@ const App = {
       this.setupDrillScramble(sentence);
     }
     // -------------------------------------------------------------
-    // STAGE 6: 말로 외우기 AI 음성 코치
-    // -------------------------------------------------------------
-    else if (modeKey === '6') {
-      document.getElementById('targetDisplayText').innerHTML = `<span style="color:var(--accent-cyan); font-weight:800;">🎙️ STAGE 6: 말로 외우기 AI 코치! 마이크를 켜고 문장을 말하세요. 틀리면 즉시 음성 피드백!</span>`;
-      document.getElementById('stage6VoiceCoachArea').classList.remove('hidden');
-      document.getElementById('revealArea').classList.remove('hidden');
-      this.setupStage6VoiceCoach(sentence, curText.language);
-    }
-    // -------------------------------------------------------------
-    // FINAL DRILL: ⚡ 끝판왕 타임어택 백지 블라인드 - 바뀜!
+    // FINAL DRILL: ⚡ 끝판왕 타임어택 백지 블라인드
     // -------------------------------------------------------------
     else if (modeKey === 'drill') {
       const isCustomWeak = (curText.weakList || []).length > 0;
@@ -2725,15 +2748,11 @@ const App = {
   },
 
   hideAllCardContainers() {
-    document.getElementById('stage15SliderArea').classList.add('hidden');
-    document.getElementById('stage3ChosungArea').classList.add('hidden');
-    document.getElementById('stage4SnowballArea').classList.add('hidden');
-    document.getElementById('stage6VoiceCoachArea').classList.add('hidden');
-    document.getElementById('drillScrambleArea').classList.add('hidden');
-    document.getElementById('typingArea').classList.add('hidden');
-    document.getElementById('revealArea').classList.add('hidden');
-    document.getElementById('revealedOriginalText').classList.add('hidden');
-    document.getElementById('errorAlertBanner').classList.add('hidden');
+    const ids = ['stage15SliderArea', 'stage3ChosungArea', 'stage4SnowballArea', 'drillScrambleArea', 'typingArea', 'revealArea', 'revealedOriginalText', 'errorAlertBanner'];
+    ids.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.classList.add('hidden');
+    });
   },
 
   // --------------------------------------------------------------------------

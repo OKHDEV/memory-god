@@ -45,6 +45,9 @@
           <button id="btnOpenVoiceCoachModal" class="btn btn-secondary btn-sm" title="말로 외우기 AI 음성 코칭">
             <span>🎙️</span> 말로 외우기
           </button>
+          <button id="btnOpenMinigame" class="btn btn-secondary btn-sm" title="NPC 미니게임 아케이드 대전">
+            <span>🎮</span> 미니게임
+          </button>
           <input type="file" id="importTxtInput" accept=".txt" class="hidden">
         </div>
       </div>
@@ -125,11 +128,6 @@
         <span class="tab-title">⚡ 타임어택 블라인드</span>
         <span class="tab-desc">끝판왕: 못 쓰면 처음부터!</span>
       </button>
-      <button class="nav-tab nav-tab-arcade" data-mode="minigame">
-        <span class="tab-step">ARCADE</span>
-        <span class="tab-title">🎮 미니게임 대전</span>
-        <span class="tab-desc">NPC 배틀 & 무한 점수전!</span>
-      </button>
     </nav>
 
     <!-- 메인 워크스페이스 그리드 -->
@@ -189,11 +187,6 @@
             <!-- 5단계: 타임어택 단어 나열 안내 -->
             <div id="ctrlStep5" class="sub-ctrl-panel hidden">
               <span class="preview-hint" style="color:var(--accent-gold)">🔥 제한시간 내에 올바른 순서대로 단어들을 클릭해 문장을 완성하세요!</span>
-            </div>
-
-            <!-- 6단계: 말로 외우기 AI 음성 코치 안내 -->
-            <div id="ctrlStep6" class="sub-ctrl-panel hidden">
-              <span class="preview-hint" style="color:var(--accent-cyan)">🎙️ 마이크를 켜고 외운 문장을 자연스럽게 말해보세요! (유사 발음 75% 이상 합격 인정)</span>
             </div>
 
             <!-- DRILL: 끝판왕 타임어택 백지 블라인드 안내 -->
@@ -319,40 +312,6 @@
               </div>
             </div>
 
-            <!-- STAGE 6: 말로 외우기 AI 음성 코치 UI -->
-            <div id="stage6VoiceCoachArea" class="stage6-voice-container hidden">
-              <div class="voice-coach-header">
-                <button id="btnToggleVoiceCoachMic" class="btn btn-mic btn-mic-lg">
-                  <span class="mic-icon">🎙️</span>
-                  <span id="voiceCoachStatusText">마이크 누르고 문장 외워서 말하기</span>
-                </button>
-                <div class="voice-coach-tip">
-                  🗣️ AI 코치가 실시간으로 음성을 듣고, 틀리면 음성으로 피드백을 주며 처음부터 다시 연습합니다!
-                </div>
-              </div>
-
-              <!-- 실시간 음성 인식 자막창 & 유사도 게이지 -->
-              <div class="voice-transcript-box">
-                <div class="transcript-label">🎙️ 실시간 인식 자막:</div>
-                <p id="liveTranscriptText" class="live-transcript">마이크 버튼을 누르면 음성 인식이 시작됩니다...</p>
-                <div class="similarity-meter">
-                  <div class="meter-info">
-                    <span>일치 유사도: <strong id="voiceSimilarityRate">0%</strong></span>
-                    <span class="pass-threshold">(75% 이상 합격 인정)</span>
-                  </div>
-                  <div class="meter-bar-bg">
-                    <div id="similarityBarFill" class="meter-bar-fill" style="width: 0%"></div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- AI 음성 코치 알림창 -->
-              <div id="voiceCoachFeedbackBox" class="voice-coach-feedback hidden">
-                <span class="coach-icon">🤖</span>
-                <span id="voiceCoachFeedbackText">틀린 단어가 감지되면 올바른 단어를 즉시 코칭해 드립니다.</span>
-              </div>
-            </div>
-
             <!-- 정답 확인 토글 영역 (2, 3, 4단계 및 5단계 긴급 힌트용) -->
             <div id="revealArea" class="reveal-container hidden">
               <div id="revealedOriginalText" class="revealed-box hidden">
@@ -369,6 +328,9 @@
           <div id="minigameWorkspace" class="minigame-workspace hidden">
             <!-- 아케이드 헤더 바: 게임 탭, 난이도, 점수 -->
             <div class="arcade-header-bar">
+              <button id="btnExitMinigame" class="btn btn-secondary btn-sm" title="암기 학습으로 돌아가기">
+                <span>⬅️</span> 학습으로 복귀
+              </button>
               <div class="arcade-game-tabs">
                 <button class="arcade-tab-btn active" data-game="bomb">
                   <span>💣</span> 폭탄 릴레이

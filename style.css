@@ -337,6 +337,13 @@ body {
   border-color: rgba(255, 255, 255, 0.2);
 }
 
+.btn-secondary.active {
+  background: rgba(99, 102, 241, 0.25);
+  border-color: var(--accent-indigo);
+  color: #fff;
+  box-shadow: 0 0 14px rgba(99, 102, 241, 0.4);
+}
+
 .btn-success {
   background: linear-gradient(135deg, #10b981, #059669);
   color: #fff;
